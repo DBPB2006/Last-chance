@@ -1,0 +1,622 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Explore Verified Tickets &amp; Passes &bull; lastchance{% endblock %}
+
+{% block extra_head %}
+<!-- Typography: Outfit, Plus Jakarta Sans, Space Grotesk, Syne, JetBrains Mono -->
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Syne:wght@700;800;900&amp;family=JetBrains+Mono:wght@500;700;800&amp;display=swap" rel="stylesheet">
+
+<style>
+  h1, h2, h3, .font-display {
+    font-family: 'Syne', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-route, [class*="tracking-tight"] {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .font-mono, [class*="PNR"], [class*="barcode"], [class*="DIGILOCKER"], [class*="E-TKT"], .font-tech {
+    font-family: 'JetBrains Mono', monospace !important;
+    letter-spacing: -0.01em;
+  }
+  .ticket-code, .pnr-label {
+    font-family: 'JetBrains Mono', monospace !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Full screen width container (not centralized / not restricted to max-w-7xl) -->
+<div class="w-full px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+
+  <!-- =========================================================================
+       SECTION 1: HEADER STATUS AREA WITH COUNTER CHIPS (NO SUBTITLE)
+       ========================================================================= -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-container-high w-full">
+    <div class="flex items-center gap-3">
+      <span class="w-3 h-3 rounded-full bg-primary-container animate-pulse"></span>
+      <h1 class="font-headline-md text-xl md:text-2xl font-extrabold text-on-surface tracking-tight leading-tight">
+        Active Digital Boarding Passes
+      </h1>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-tertiary-container/15 text-tertiary font-label-ticket text-xs uppercase tracking-wider border border-tertiary-container/30 font-bold">
+        <span class="material-symbols-outlined text-[16px]">check_circle</span>
+        <span>{{ total_resales|default:"0" }} Resale Listed</span>
+      </div>
+      <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-container/15 text-primary-container font-label-ticket text-xs uppercase tracking-wider border border-primary-container/30 font-bold">
+        <span class="material-symbols-outlined text-[16px]">confirmation_number</span>
+        <span>{{ total_direct|default:"0" }} Direct Available</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       SECTION 2: 3-COLUMN COMPACT DYNAMIC BOARDING PASSES GRID (ALL SEEDED TICKETS)
+       ========================================================================= -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full" id="ticket-grid">
+
+    {% for item in events %}
+    <div class="ticket-card {{ item.category }} flex flex-col bg-surface-container-lowest rounded-3xl shadow-sm border border-surface-container-high overflow-hidden relative transition-all hover:shadow-lg hover:-translate-y-1 duration-200">
+
+      <!-- CATEGORY-SPECIFIC BANNER WITH RICH GRADIENTS & COLORS -->
+      {% if item.category == 'train' %}
+        <!-- Train Pass Header (Vibrant Primary Orange) -->
+        <div class="bg-primary-container p-4 sm:p-5 text-on-primary relative">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-9 h-9 rounded-xl bg-inverse-surface text-inverse-on-surface flex items-center justify-center font-bold shadow-xs shrink-0">
+                <span class="material-symbols-outlined text-[20px]">train</span>
+              </div>
+              <div class="min-w-0">
+                <span class="font-code-barcode text-[10px] uppercase tracking-wider opacity-90 font-mono block truncate">
+                  {{ item.provider_name|upper }} &bull; IRCTC VERIFIED
+                </span>
+                <h3 class="font-headline-md text-base sm:text-lg font-extrabold leading-tight text-white truncate" title="{{ item.title }}">
+                  {{ item.title }}
+                </h3>
+              </div>
+            </div>
+            <div class="px-2.5 py-0.5 rounded-full bg-inverse-surface/40 backdrop-blur-md text-on-primary font-label-ticket text-[10px] uppercase tracking-wider font-extrabold shrink-0 border border-white/20 whitespace-nowrap">
+              {{ item.transit.gate_or_platform|default:"Platform Confirmed" }}
+            </div>
+          </div>
+
+          <!-- Transit Route Row -->
+          <div class="flex items-center justify-between mt-4">
+            <div>
+              <div class="font-display-hero text-2xl sm:text-3xl font-black font-route tracking-tight text-white leading-none">
+                {{ item.transit.orig_code|default:"DEP" }}
+              </div>
+              <div class="font-body-sm text-[11px] opacity-90 truncate max-w-[90px] mt-0.5">
+                {{ item.transit.orig_name|default:item.venue_or_route }}
+              </div>
+              <div class="font-label-ticket text-[11px] font-mono font-bold mt-0.5 text-white/95">
+                {{ item.transit.dep_time|default:item.formatted_time }}
+              </div>
+            </div>
+
+            <div class="flex-1 flex flex-col items-center px-2 min-w-0">
+              <div class="font-code-barcode text-[9px] uppercase tracking-widest opacity-90 font-mono truncate max-w-[110px]">
+                {{ item.transit.train_number|default:item.transit.duration_str|default:"CONFIRMED" }}
+              </div>
+              <div class="w-full flex items-center gap-1 my-0.5">
+                <div class="h-0.5 w-full bg-on-primary/40"></div>
+                <span class="material-symbols-outlined text-[15px] text-white">arrow_forward</span>
+                <div class="h-0.5 w-full bg-on-primary/40"></div>
+              </div>
+              <div class="font-label-ticket text-[9px] bg-inverse-surface/40 px-1.5 py-0.5 rounded text-center font-bold text-white whitespace-nowrap">
+                CONFIRMED
+              </div>
+            </div>
+
+            <div class="text-right">
+              <div>
+                <div class="font-display-hero text-2xl sm:text-3xl font-black font-route tracking-tight text-white leading-none">
+                  {{ item.transit.dest_code|default:"ARR" }}
+                </div>
+                <div class="font-body-sm text-[11px] opacity-90 truncate max-w-[90px] mt-0.5">
+                  {{ item.transit.dest_name|default:item.venue_or_route }}
+                </div>
+                <div class="font-label-ticket text-[11px] font-mono font-bold mt-0.5 text-white/95">
+                  {{ item.transit.arr_time|default:item.formatted_end_time|default:"Scheduled" }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      {% elif item.category == 'flight' %}
+        <!-- Flight Pass Header (Pitch Black #111111 per design.md & Reference Screenshot) -->
+        <div class="bg-inverse-surface p-4 sm:p-5 text-inverse-on-surface relative">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-9 h-9 rounded-xl bg-primary-container text-on-primary flex items-center justify-center font-bold shrink-0 shadow-xs">
+                <span class="material-symbols-outlined text-[20px]">flight_takeoff</span>
+              </div>
+              <div class="min-w-0">
+                <span class="font-code-barcode text-[10px] uppercase tracking-wider text-primary-fixed font-mono block truncate font-bold">
+                  {{ item.provider_name|upper }} &bull; IATA VERIFIED
+                </span>
+                <h3 class="font-headline-md text-base sm:text-lg font-extrabold leading-tight text-white truncate" title="{{ item.title }}">
+                  {{ item.title }}
+                </h3>
+              </div>
+            </div>
+            <div class="px-3 py-1 rounded-full bg-primary-container text-on-primary font-label-ticket text-xs uppercase tracking-wider font-extrabold shrink-0 shadow-xs whitespace-nowrap">
+              {{ item.transit.gate_or_platform|default:"GATE 32A &bull; PRIORITY" }}
+            </div>
+          </div>
+
+          <!-- Flight Route Row -->
+          <div class="flex items-center justify-between mt-4">
+            <div>
+              <div class="font-display-hero text-2xl sm:text-3xl font-black font-route tracking-tight text-white leading-none">
+                {{ item.transit.orig_code|default:"DEL" }}
+              </div>
+              <div class="font-body-sm text-[11px] text-surface-dim truncate max-w-[90px] mt-0.5">
+                {{ item.transit.orig_name|default:item.venue_or_route }}
+              </div>
+              <div class="font-label-ticket text-xs font-mono text-primary-container mt-1 font-bold">
+                Boarding {{ item.transit.dep_time|default:item.formatted_time }}
+              </div>
+            </div>
+
+            <div class="flex-1 flex flex-col items-center px-2 min-w-0">
+              <div class="font-code-barcode text-[9px] uppercase tracking-widest text-surface-dim font-mono truncate max-w-[110px]">
+                {{ item.transit.duration_str|default:"2H 45M NON-STOP" }}
+              </div>
+              <div class="w-full flex items-center gap-1 my-1">
+                <div class="h-0.5 w-full bg-neutral-700"></div>
+                <span class="material-symbols-outlined text-[16px] text-primary-container">flight</span>
+                <div class="h-0.5 w-full bg-neutral-700"></div>
+              </div>
+              <div class="font-label-ticket text-[9px] bg-[#2f3130] text-white px-2 py-0.5 rounded text-center whitespace-nowrap font-bold">
+                {{ item.transit.middle_badge|default:"CABIN BAG: 7KG" }}
+              </div>
+            </div>
+
+            <div class="text-right">
+              <div>
+                <div class="font-display-hero text-2xl sm:text-3xl font-black font-route tracking-tight text-white leading-none">
+                  {{ item.transit.dest_code|default:"BLR" }}
+                </div>
+                <div class="font-body-sm text-[11px] text-surface-dim truncate max-w-[90px] mt-0.5">
+                  {{ item.transit.dest_name|default:item.venue_or_route }}
+                </div>
+                <div class="font-label-ticket text-xs font-mono text-white mt-1 font-bold">
+                  {{ item.transit.arr_time|default:item.formatted_end_time|default:"09:00 AM" }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      {% elif item.category == 'concert' or item.category == 'festival' %}
+        <!-- Concert / Festival Pass Header (Sunset Luxury Gradient ending in Pitch Black #111111) -->
+        <div class="p-4 sm:p-5 text-on-primary relative overflow-hidden" style="background: linear-gradient(135deg, #a33e00 0%, #ff6600 60%, #111111 100%);">
+          <div class="flex items-start justify-between relative z-10 gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-9 h-9 rounded-xl bg-surface-container-lowest text-primary-container flex items-center justify-center font-bold shadow-md shrink-0">
+                <span class="material-symbols-outlined text-[20px]">music_note</span>
+              </div>
+              <div class="min-w-0">
+                <span class="font-code-barcode text-[10px] uppercase tracking-wider opacity-90 font-mono block truncate">
+                  LIVE EVENT &bull; 0% DUPLICATION RISK
+                </span>
+                <h3 class="font-headline-md text-base sm:text-lg font-extrabold leading-tight text-white truncate" title="{{ item.title }}">
+                  {{ item.title }}
+                </h3>
+              </div>
+            </div>
+            <div class="px-2.5 py-0.5 rounded-full bg-surface-container-lowest text-primary-container font-label-ticket text-[10px] uppercase tracking-wider font-extrabold shrink-0 shadow-xs whitespace-nowrap">
+              {{ item.venue_access|default:"VIP Pass" }}
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between mt-4 relative z-10">
+            <div>
+              <div class="font-headline-lg text-lg sm:text-xl font-black tracking-tight text-white truncate max-w-[160px]">
+                {{ item.venue_or_route }}
+              </div>
+              <div class="font-body-sm text-[11px] opacity-90 truncate max-w-[140px]">
+                {{ item.provider_name }}
+              </div>
+              <div class="font-label-ticket text-[11px] mt-0.5 text-white/95">
+                {{ item.formatted_date_only }}
+              </div>
+            </div>
+            <div class="text-right">
+              <div>
+                <div class="font-headline-lg text-lg sm:text-xl font-black tracking-tight text-white">
+                  {{ item.formatted_time }}
+                </div>
+                <div class="font-body-sm text-[11px] opacity-90">
+                  {{ item.formatted_end_time|default:"Gates Open" }}
+                </div>
+                <div class="font-label-ticket text-[9px] bg-inverse-surface/40 px-1.5 py-0.5 rounded text-center inline-block mt-0.5 font-bold">
+                  {{ item.venue_tag|default:"AGE 18+" }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      {% elif item.category == 'movie' %}
+        <!-- Movie Pass Header (Surface Container High with High Contrast) -->
+        <div class="bg-surface-container-high p-4 sm:p-5 text-on-surface relative">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-9 h-9 rounded-xl bg-inverse-surface text-inverse-on-surface flex items-center justify-center font-bold shrink-0 shadow-xs">
+                <span class="material-symbols-outlined text-[20px]">movie</span>
+              </div>
+              <div class="min-w-0">
+                <span class="font-code-barcode text-[10px] uppercase tracking-wider text-secondary font-mono block truncate">
+                  {{ item.provider_name|upper }} &bull; CINEMA PASS
+                </span>
+                <h3 class="font-headline-md text-base sm:text-lg font-extrabold leading-tight text-on-surface truncate" title="{{ item.title }}">
+                  {{ item.title }}
+                </h3>
+              </div>
+            </div>
+            <div class="px-2.5 py-0.5 rounded-full bg-primary-container text-on-primary font-label-ticket text-[10px] uppercase tracking-wider font-extrabold shrink-0 whitespace-nowrap">
+              {{ item.venue_access|default:"IMAX Laser" }}
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between mt-4">
+            <div>
+              <div class="font-headline-lg text-lg sm:text-xl font-black tracking-tight text-on-surface truncate max-w-[160px]">
+                {{ item.venue_or_route }}
+              </div>
+              <div class="font-body-sm text-[11px] text-secondary truncate max-w-[140px]">
+                {{ item.provider_name }}
+              </div>
+              <div class="font-label-ticket text-[11px] text-primary mt-0.5 font-bold">
+                {{ item.formatted_date_only }} &bull; {{ item.formatted_time }}
+              </div>
+            </div>
+            <div class="text-right">
+              <div>
+                <div class="font-headline-lg text-lg sm:text-xl font-black tracking-tight text-primary-container truncate max-w-[120px]">
+                  {{ item.seat_tier_display }}
+                </div>
+                <div class="font-body-sm text-[11px] text-secondary">
+                  {{ item.total_available_count }} Seats Available
+                </div>
+                <div class="font-label-ticket text-[9px] bg-surface-container-highest px-1.5 py-0.5 rounded text-center inline-block mt-0.5 font-bold">
+                  {{ item.venue_tag|default:"AUDI ENTRY" }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      {% else %}
+        <!-- Sports / Stadium Pass Header (High-Contrast Pitch Black #111111 & Signal Orange) -->
+        <div class="bg-inverse-surface border-b-2 border-primary-container p-4 sm:p-5 text-inverse-on-surface relative">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-9 h-9 rounded-xl bg-primary-container text-on-primary flex items-center justify-center font-bold shrink-0 shadow-xs">
+                <span class="material-symbols-outlined text-[20px]">sports_cricket</span>
+              </div>
+              <div class="min-w-0">
+                <span class="font-code-barcode text-[10px] uppercase tracking-wider text-primary-fixed font-mono block truncate font-bold">
+                  {{ item.provider_name|upper }} &bull; STADIUM PASS
+                </span>
+                <h3 class="font-headline-md text-base sm:text-lg font-extrabold leading-tight text-white truncate" title="{{ item.title }}">
+                  {{ item.title }}
+                </h3>
+              </div>
+            </div>
+            <div class="px-3 py-1 rounded-full bg-primary-container text-white font-label-ticket text-[10px] uppercase tracking-wider font-extrabold shrink-0 whitespace-nowrap shadow-xs">
+              Match Pass
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between mt-4">
+            <div>
+              <div class="font-headline-lg text-lg sm:text-xl font-black tracking-tight text-white truncate max-w-[160px]">
+                {{ item.venue_or_route }}
+              </div>
+              <div class="font-body-sm text-[11px] text-surface-dim truncate max-w-[140px]">
+                {{ item.provider_name }}
+              </div>
+              <div class="font-label-ticket text-[11px] font-mono text-primary-container mt-0.5 font-bold">
+                {{ item.formatted_date_only }} &bull; {{ item.formatted_time }}
+              </div>
+            </div>
+            <div class="text-right">
+              <div>
+                <div class="font-headline-lg text-lg sm:text-xl font-black tracking-tight text-primary-container truncate max-w-[120px]">
+                  {{ item.seat_tier_display }}
+                </div>
+                <div class="font-body-sm text-[11px] text-surface-dim">
+                  {{ item.total_available_count }} Seats
+                </div>
+                <div class="font-label-ticket text-[9px] bg-white/10 text-white px-1.5 py-0.5 rounded text-center inline-block mt-0.5 font-bold">
+                  STADIUM GATE
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- 4-COLUMN COMPACT METADATA (ACCURATE EVENT DETAILS) -->
+      <div class="p-3.5 bg-surface-container-lowest grid grid-cols-4 gap-2 text-left border-t border-surface-container-high/60">
+        <div class="min-w-0">
+          <span class="font-code-barcode text-[10px] text-secondary uppercase font-mono block truncate">Event Date</span>
+          <div class="font-body-md text-xs sm:text-sm font-bold text-on-surface truncate">
+            {{ item.formatted_date_only }}
+          </div>
+        </div>
+        <div class="min-w-0">
+          <span class="font-code-barcode text-[10px] text-secondary uppercase font-mono block truncate">Schedule</span>
+          <div class="font-body-md text-xs sm:text-sm font-bold text-on-surface truncate">
+            {{ item.formatted_time }}
+          </div>
+        </div>
+        <div class="min-w-0">
+          <span class="font-code-barcode text-[10px] text-secondary uppercase font-mono block truncate">Seat / Tier</span>
+          <div class="font-body-md text-xs sm:text-sm font-extrabold text-primary-container truncate">
+            {{ item.seat_tier_display }}
+          </div>
+        </div>
+        <div class="min-w-0">
+          <span class="font-code-barcode text-[10px] text-secondary uppercase font-mono block truncate">Provider</span>
+          <div class="font-body-md text-xs sm:text-sm font-bold text-on-surface truncate">
+            {{ item.seller_or_issuer }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Ticket Stub Perforation Notch Row -->
+      <div class="relative w-full h-6 flex items-center justify-between bg-surface-container-lowest px-3">
+        <div class="w-5 h-5 rounded-full bg-surface absolute -left-2.5 shadow-inner"></div>
+        <div class="w-full border-t-2 border-dashed border-outline-variant mx-2"></div>
+        <div class="w-5 h-5 rounded-full bg-surface absolute -right-2.5 shadow-inner"></div>
+      </div>
+
+      <!-- Lower Perforated Stub Section -->
+      <div class="p-3.5 bg-surface-container-lowest pt-1 flex flex-col gap-3">
+        <div class="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-surface-container-low border border-surface-container-high">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <svg class="w-32 h-7 text-on-surface shrink-0" fill="currentColor" viewBox="0 0 160 40">
+              <rect height="40" width="3" x="0" y="0"></rect>
+              <rect height="40" width="2" x="5" y="0"></rect>
+              <rect height="40" width="5" x="9" y="0"></rect>
+              <rect height="40" width="2" x="16" y="0"></rect>
+              <rect height="40" width="6" x="20" y="0"></rect>
+              <rect height="40" width="3" x="28" y="0"></rect>
+              <rect height="40" width="2" x="33" y="0"></rect>
+              <rect height="40" width="7" x="37" y="0"></rect>
+              <rect height="40" width="3" x="46" y="0"></rect>
+              <rect height="40" width="5" x="51" y="0"></rect>
+              <rect height="40" width="2" x="58" y="0"></rect>
+              <rect height="40" width="4" x="62" y="0"></rect>
+              <rect height="40" width="6" x="68" y="0"></rect>
+              <rect height="40" width="2" x="76" y="0"></rect>
+              <rect height="40" width="7" x="80" y="0"></rect>
+              <rect height="40" width="3" x="89" y="0"></rect>
+              <rect height="40" width="6" x="94" y="0"></rect>
+              <rect height="40" width="2" x="102" y="0"></rect>
+              <rect height="40" width="5" x="106" y="0"></rect>
+              <rect height="40" width="3" x="113" y="0"></rect>
+              <rect height="40" width="6" x="118" y="0"></rect>
+              <rect height="40" width="2" x="126" y="0"></rect>
+              <rect height="40" width="4" x="130" y="0"></rect>
+              <rect height="40" width="6" x="136" y="0"></rect>
+              <rect height="40" width="3" x="144" y="0"></rect>
+              <rect height="40" width="5" x="149" y="0"></rect>
+            </svg>
+          </div>
+          {% if item.is_resale_only %}
+          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-tertiary-container/15 text-tertiary font-label-ticket text-[10px] uppercase tracking-wider shrink-0 font-bold whitespace-nowrap">
+            <span class="material-symbols-outlined text-[13px]">verified_user</span> Verified Resale
+          </span>
+          {% else %}
+          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary-container/15 text-primary-container font-label-ticket text-[10px] uppercase tracking-wider shrink-0 font-bold whitespace-nowrap">
+            <span class="material-symbols-outlined text-[13px]">verified</span> Direct Verified
+          </span>
+          {% endif %}
+        </div>
+
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <span class="font-code-barcode text-[9px] text-secondary uppercase font-mono block">
+              {% if item.first_resale_id and request.GET.type == 'resale' or item.is_resale_only and item.first_resale_id %}Fixed Seat Resale{% elif item.is_resale_only %}Resale Starting{% else %}Direct Starting{% endif %}
+            </span>
+            <div class="text-lg sm:text-xl font-black text-on-surface font-tech leading-tight">₹{{ item.starting_price }}</div>
+          </div>
+          {% if item.first_resale_id and request.GET.type == 'resale' or item.is_resale_only and item.first_resale_id %}
+          <a href="{% url 'listing-detail' item.first_resale_id %}" class="px-3.5 py-2 rounded-xl bg-primary-container text-on-primary hover:bg-primary font-label-ticket text-xs uppercase tracking-wider transition-colors flex items-center gap-1 shadow-xs font-bold active:scale-95 whitespace-nowrap">
+            <span>Buy Resale Seat</span>
+            <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+          </a>
+          {% else %}
+          <a href="{% url 'listing-detail' item.id %}" class="px-3.5 py-2 rounded-xl bg-primary-container text-on-primary hover:bg-primary font-label-ticket text-xs uppercase tracking-wider transition-colors flex items-center gap-1 shadow-xs font-bold active:scale-95 whitespace-nowrap">
+            <span>Select &amp; Book</span>
+            <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+    {% empty %}
+    <!-- Empty State When No Listings Found -->
+    <div class="col-span-full py-16 px-6 bg-surface-container-lowest rounded-3xl border border-surface-container-high text-center flex flex-col items-center justify-center max-w-lg mx-auto">
+      <div class="w-14 h-14 rounded-2xl bg-primary-container/15 text-primary-container flex items-center justify-center mb-3">
+        <span class="material-symbols-outlined text-[28px]">confirmation_number</span>
+      </div>
+      <h3 class="font-headline-md text-base font-bold text-on-surface mb-1">No Active Passes Found</h3>
+      <p class="font-body-sm text-xs text-secondary mb-4 max-w-sm">
+        No ticket listings match your current filter. Explore all active listings or list an unused ticket for peer resale.
+      </p>
+      <div class="flex items-center gap-3">
+        <a href="{% url 'explore' %}" class="px-4 py-2 rounded-xl bg-primary-container text-on-primary font-label-ticket text-xs uppercase tracking-wider font-bold shadow-sm hover:bg-primary transition-colors">
+          View All Active Passes
+        </a>
+        <a href="{% url 'sell-ticket' %}" class="px-4 py-2 rounded-xl bg-surface-container-high text-on-surface font-label-ticket text-xs uppercase tracking-wider font-bold transition-colors">
+          List a Ticket
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+
+  </div>
+
+  <!-- =========================================================================
+       SECTION 3: TICKETS YOU'VE LISTED ON MARKETPLACE DRAWER
+       ========================================================================= -->
+  <div class="bg-surface-container-lowest rounded-3xl p-5 md:p-6 border border-surface-container-high shadow-sm w-full">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-surface-container-high">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-tertiary-container/15 text-tertiary flex items-center justify-center font-bold">
+          <span class="material-symbols-outlined text-[22px]">storefront</span>
+        </div>
+        <div>
+          <h3 class="font-headline-md text-lg md:text-xl font-extrabold text-on-surface">Tickets You've Listed On Marketplace</h3>
+          <p class="font-body-sm text-xs text-secondary">Active marketplace listings and peer transfer requests under your account</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        {% if user_listings %}
+        <span class="px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-700 font-label-ticket text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> {{ user_listings|length }} Live Listing{{ user_listings|length|pluralize }}
+        </span>
+        {% else %}
+        <a href="{% url 'sell-ticket' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-container text-on-primary font-label-ticket text-xs uppercase tracking-wider font-bold shadow-xs hover:bg-primary transition-colors">
+          <span class="material-symbols-outlined text-[15px]">add</span> List a Ticket
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if user.is_authenticated and user_listings %}
+      <div class="mt-4 flex flex-col gap-3">
+        {% for ul in user_listings %}
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-2xl bg-surface-container-low border border-surface-container-high">
+          <div class="flex items-start sm:items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-primary-container text-on-primary flex items-center justify-center font-bold shrink-0">
+              <span class="material-symbols-outlined text-[22px]">
+                {% if ul.ticket.event.category == 'train' %}directions_railway{% elif ul.ticket.event.category == 'flight' %}flight{% elif ul.ticket.event.category == 'movie' %}movie{% else %}confirmation_number{% endif %}
+              </span>
+            </div>
+            <div>
+              <div class="font-headline-sm text-sm sm:text-base font-bold text-on-surface">{{ ul.ticket.event.title }}</div>
+              <div class="flex items-center gap-2 text-xs text-secondary mt-0.5 flex-wrap">
+                <span>Tier: {{ ul.ticket.seat_or_coach }}</span>
+                <span>&bull;</span>
+                <span>Date: {{ ul.ticket.event.start_time|date:"d M Y" }}</span>
+                <span>&bull;</span>
+                <span class="text-emerald-600 font-bold">Status: {{ ul.get_status_display }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between sm:justify-end gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-surface-container-high">
+            <div class="text-right">
+              <span class="font-code-barcode text-[10px] text-secondary uppercase font-mono block">Listed Price</span>
+              <div class="text-lg font-black text-on-surface font-tech">₹{{ ul.total_buyer_price }}</div>
+            </div>
+            <a href="{% url 'my-listings' %}" class="px-3 py-1.5 rounded-xl bg-error/10 hover:bg-error/20 text-error text-xs font-label-ticket uppercase font-bold transition-colors flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">cancel</span> Manage
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% elif user.is_authenticated %}
+      <!-- Authenticated user with no active listings -->
+      <div class="mt-4 p-6 rounded-2xl bg-surface-container-low border border-surface-container-high text-center flex flex-col items-center justify-center">
+        <div class="w-10 h-10 rounded-xl bg-tertiary-container/15 text-tertiary flex items-center justify-center mb-2 font-bold">
+          <span class="material-symbols-outlined text-[22px]">confirmation_number</span>
+        </div>
+        <div class="font-headline-sm text-sm font-bold text-on-surface">No Tickets Listed Yet</div>
+        <p class="font-body-sm text-xs text-secondary mt-0.5 max-w-md">
+          You have no active resale listings right now. Have a spare train, flight, movie, or concert pass? List it securely with DigiLocker verified protection.
+        </p>
+        <a href="{% url 'sell-ticket' %}" class="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-container text-on-primary font-label-ticket text-xs uppercase tracking-wider font-bold shadow-xs hover:bg-primary transition-colors">
+          <span class="material-symbols-outlined text-[16px]">add</span> List a Ticket for Resale
+        </a>
+      </div>
+    {% else %}
+      <!-- Guest User Prompt -->
+      <div class="mt-4 p-6 rounded-2xl bg-surface-container-low border border-surface-container-high text-center flex flex-col items-center justify-center">
+        <div class="w-10 h-10 rounded-xl bg-primary-container/15 text-primary-container flex items-center justify-center mb-2 font-bold">
+          <span class="material-symbols-outlined text-[22px]">lock</span>
+        </div>
+        <div class="font-headline-sm text-sm font-bold text-on-surface">Manage Your Resale Tickets</div>
+        <p class="font-body-sm text-xs text-secondary mt-0.5 max-w-md">
+          Log in to view your listed passes, monitor buyer verification, and receive protected UPI payouts.
+        </p>
+        <div class="mt-3 flex items-center gap-3">
+          <a href="{% url 'login' %}?next={% url 'explore' %}" class="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-inverse-surface text-inverse-on-surface font-label-ticket text-xs uppercase tracking-wider font-bold shadow-xs hover:bg-black transition-colors">
+            Log In
+          </a>
+          <a href="{% url 'sell-ticket' %}" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-container text-on-primary font-label-ticket text-xs uppercase tracking-wider font-bold shadow-xs hover:bg-primary transition-colors">
+            <span class="material-symbols-outlined text-[16px]">sell</span> List a Ticket
+          </a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- =========================================================================
+       SECTION 4: EXPLORE BY DESTINATION
+       ========================================================================= -->
+  <div class="mb-4 w-full">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <span class="font-label-ticket text-label-ticket text-secondary uppercase tracking-widest font-extrabold font-mono">Popular Locations</span>
+        <h2 class="font-headline-md text-xl md:text-2xl font-extrabold text-on-surface">Explore by Destination</h2>
+      </div>
+      <a class="font-label-ticket text-label-ticket text-primary uppercase tracking-wider hover:underline flex items-center gap-1 font-bold" data-path="marketplace-home" href="{% url 'explore' %}?type=resale">
+        Explore All Resales <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+      </a>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+
+      <!-- Mumbai -->
+      <a href="{% url 'explore' %}?q=Mumbai" class="rounded-2xl overflow-hidden bg-surface-container-lowest shadow-sm group cursor-pointer border border-surface-container-high hover:border-primary-container transition-all block">
+        <div class="w-full h-32 bg-cover bg-center transition-transform duration-300 group-hover:scale-105" data-alt="Mumbai Gateway of India" style="background-image: url('{% static 'img/mumbai_gateway.jpg' %}');"></div>
+        <div class="p-3">
+          <div class="font-headline-sm text-sm font-extrabold text-on-surface">Mumbai</div>
+          <div class="font-body-sm text-xs text-secondary">Vande Bharat &amp; Concert Passes</div>
+        </div>
+      </a>
+
+      <!-- Ladakh -->
+      <a href="{% url 'explore' %}?q=Ladakh" class="rounded-2xl overflow-hidden bg-surface-container-lowest shadow-sm group cursor-pointer border border-surface-container-high hover:border-primary-container transition-all block">
+        <div class="w-full h-32 bg-cover bg-center transition-transform duration-300 group-hover:scale-105" data-alt="Ladakh landscape" style="background-image: url('{% static 'img/ladakh_stupa.jpg' %}');"></div>
+        <div class="p-3">
+          <div class="font-headline-sm text-sm font-extrabold text-on-surface">Ladakh</div>
+          <div class="font-body-sm text-xs text-secondary">Expedition &amp; Flight Passes</div>
+        </div>
+      </a>
+
+      <!-- Jaipur -->
+      <a href="{% url 'explore' %}?q=Jaipur" class="rounded-2xl overflow-hidden bg-surface-container-lowest shadow-sm group cursor-pointer border border-surface-container-high hover:border-primary-container transition-all block">
+        <div class="w-full h-32 bg-cover bg-center transition-transform duration-300 group-hover:scale-105" data-alt="Jaipur Hawa Mahal" style="background-image: url('{% static 'img/jaipur_hawamahal.jpg' %}');"></div>
+        <div class="p-3">
+          <div class="font-headline-sm text-sm font-extrabold text-on-surface">Jaipur</div>
+          <div class="font-body-sm text-xs text-secondary">Shatabdi &amp; Cultural Passes</div>
+        </div>
+      </a>
+
+      <!-- Delhi NCR -->
+      <a href="{% url 'explore' %}?q=Delhi" class="rounded-2xl overflow-hidden bg-surface-container-lowest shadow-sm group cursor-pointer border border-surface-container-high hover:border-primary-container transition-all block">
+        <div class="w-full h-32 bg-cover bg-center transition-transform duration-300 group-hover:scale-105" data-alt="Delhi Qutub Minar" style="background-image: url('{% static 'img/delhi_qutubminar.jpg' %}');"></div>
+        <div class="p-3">
+          <div class="font-headline-sm text-sm font-extrabold text-on-surface">Delhi NCR</div>
+          <div class="font-body-sm text-xs text-secondary">Transit &amp; Stadium Events</div>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,531 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Orders &bull; Invoices &bull; lastchance{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Machine barcode generation styling */
+  .barcode-lines {
+    background: repeating-linear-gradient(
+      to right,
+      #111827,
+      #111827 2px,
+      transparent 2px,
+      transparent 4px,
+      #111827 4px,
+      #111827 7px,
+      transparent 7px,
+      transparent 9px,
+      #111827 9px,
+      #111827 10px,
+      transparent 10px,
+      transparent 14px,
+      #111827 14px,
+      #111827 17px,
+      transparent 17px,
+      transparent 19px
+    );
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- FULL SCREEN WIDTH CONTAINER (MATCHING EXPLORE, VAULT & WALLET) -->
+<div class="w-full px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+
+  <!-- Section 1: Clean Grounded Header with Telemetry Status -->
+  <section class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-4 border-b border-neutral-200/80 w-full">
+    <div class="flex flex-col gap-1.5 max-w-2xl">
+      <div class="flex items-center gap-2 mb-0.5">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold uppercase tracking-wider font-display-hero border border-emerald-200">
+          <span class="material-symbols-outlined text-[16px] text-emerald-600" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+          <span>DigiLocker Verified &bull; Official Booking Ledger</span>
+        </span>
+      </div>
+      <h1 class="font-display-hero font-black text-3xl sm:text-4xl md:text-5xl text-neutral-900 tracking-tight leading-tight">
+        My <span class="text-[#FF6600]">Orders</span> &amp; Invoices
+      </h1>
+      <p class="font-body-lg text-neutral-600 text-sm md:text-base leading-relaxed">
+        Track your verified ticket bookings, payment confirmations, and digital tax receipts.
+      </p>
+    </div>
+
+    <!-- Telemetry Status & Quick Action Buttons -->
+    <div class="flex flex-wrap items-center gap-2.5">
+      <div class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white border border-neutral-200 text-neutral-900 font-display-hero text-xs font-bold uppercase tracking-wider shadow-2xs">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>{{ orders|length }} Verified Booking{{ orders|length|pluralize }}</span>
+      </div>
+      <a class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#FF6600] hover:bg-[#e05a00] text-white rounded-xl font-display-hero font-bold text-sm tracking-wide shadow-sm hover:shadow active:translate-y-0.5 transition-all" data-path="all-passes" href="{% url 'explore' %}">
+        <span class="material-symbols-outlined text-[18px]">search</span>
+        <span>Browse Passes</span>
+      </a>
+      <a class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#111111] hover:bg-neutral-800 text-white rounded-xl font-display-hero font-bold text-sm tracking-wide shadow-sm active:translate-y-0.5 transition-all" data-path="pass-vault" href="{% url 'ticket-vault' %}">
+        <span class="material-symbols-outlined text-[18px]">confirmation_number</span>
+        <span>My Ticket Vault</span>
+      </a>
+      <a class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-neutral-200 hover:bg-neutral-100 text-neutral-800 rounded-xl font-display-hero font-bold text-sm tracking-wide shadow-xs transition-all" data-path="wallet" href="{% url 'my-wallet' %}">
+        <span class="material-symbols-outlined text-[18px] text-[#FF6600]">account_balance_wallet</span>
+        <span>Wallet &amp; Payouts</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Section 2: Filters & Quick Search Bar -->
+  <section class="flex flex-col gap-3 bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-neutral-200 w-full">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <!-- Category Filter Tabs -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0" id="filter-pill-container">
+        <button class="order-filter-tab px-3.5 py-1.5 rounded-lg text-xs font-display-hero font-bold bg-[#111111] text-white shadow-xs transition-all whitespace-nowrap cursor-pointer" data-filter="all" type="button">
+          All Orders ({{ orders|length }})
+        </button>
+        <button class="order-filter-tab px-3.5 py-1.5 rounded-lg text-xs font-display-hero font-bold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer" data-filter="train" type="button">
+          <span class="material-symbols-outlined text-[15px] text-[#FF6600]">train</span>
+          Trains (<span id="tab-count-train">0</span>)
+        </button>
+        <button class="order-filter-tab px-3.5 py-1.5 rounded-lg text-xs font-display-hero font-bold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer" data-filter="flight" type="button">
+          <span class="material-symbols-outlined text-[15px] text-neutral-900">flight</span>
+          Flights (<span id="tab-count-flight">0</span>)
+        </button>
+        <button class="order-filter-tab px-3.5 py-1.5 rounded-lg text-xs font-display-hero font-bold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer" data-filter="concert" type="button">
+          <span class="material-symbols-outlined text-[15px] text-amber-600">music_note</span>
+          Concerts &amp; Events (<span id="tab-count-concert">0</span>)
+        </button>
+        <button class="order-filter-tab px-3.5 py-1.5 rounded-lg text-xs font-display-hero font-bold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer" data-filter="sports" type="button">
+          <span class="material-symbols-outlined text-[15px] text-emerald-600">sports_cricket</span>
+          Sports (<span id="tab-count-sports">0</span>)
+        </button>
+        <button class="order-filter-tab px-3.5 py-1.5 rounded-lg text-xs font-display-hero font-bold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer" data-filter="direct" type="button">
+          <span class="material-symbols-outlined text-[15px] text-blue-600">store</span>
+          Direct Bookings
+        </button>
+        <button class="order-filter-tab px-3.5 py-1.5 rounded-lg text-xs font-display-hero font-bold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer" data-filter="resale" type="button">
+          <span class="material-symbols-outlined text-[15px] text-emerald-600">swap_horiz</span>
+          Peer Resales
+        </button>
+      </div>
+    </div>
+
+    <!-- Search Input Bar -->
+    <div class="relative w-full">
+      <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
+        <span class="material-symbols-outlined text-[18px]">search</span>
+      </div>
+      <input class="w-full pl-10 pr-24 py-2.5 rounded-xl bg-neutral-50 text-neutral-900 placeholder:text-neutral-500 text-xs md:text-sm font-body-lg border border-neutral-200 focus:outline-none focus:bg-white focus:border-[#FF6600] transition-colors" id="order-search-input" placeholder="Search by Order Number (e.g. ORD-ACCBED46), Ticket Ref, Event name, Route, or Attendee..." type="text">
+      <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+        <span class="font-mono text-[10px] text-neutral-500 bg-neutral-200/70 px-2 py-0.5 rounded font-bold">
+          CMD + K
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Real Order Cards / Vouchers -->
+  {% if not orders %}
+    <!-- Section 4: Clean Tactical Empty State Card -->
+    <div class="bg-white rounded-2xl p-10 sm:p-14 shadow-xs border border-neutral-200 text-center flex flex-col items-center justify-center gap-4 my-2 w-full" id="empty-state-card">
+      <div class="w-16 h-16 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center text-[#FF6600]">
+        <span class="material-symbols-outlined text-[36px]">receipt_long</span>
+      </div>
+      <div class="max-w-md space-y-1">
+        <h3 class="font-display-hero font-bold text-xl text-neutral-900 mb-2">No orders placed yet</h3>
+        <p class="text-xs text-neutral-500 leading-relaxed font-body-lg">
+          When you book tickets from direct providers or peer sellers, your verified order receipts, invoices, and digital gate passes will appear here.
+        </p>
+      </div>
+      <div class="flex items-center gap-3 pt-2">
+        <a class="px-5 py-2.5 bg-[#FF6600] hover:bg-[#e05a00] text-white rounded-xl font-display-hero font-bold text-sm shadow-xs transition-all" data-path="all-passes" href="{% url 'explore' %}">
+          Explore Available Tickets
+        </a>
+      </div>
+    </div>
+  {% else %}
+    <div class="flex flex-col gap-4 w-full" id="orders-content-container">
+      {% for o in orders %}
+        <article class="order-card relative bg-white rounded-2xl p-4 sm:p-5 shadow-xs hover:shadow-md transition-all border-l-4 {% if o.ticket.event.category == 'train' %}border-l-[#FF6600]{% elif o.ticket.event.category == 'flight' %}border-l-[#111111]{% elif o.ticket.event.category == 'sports' %}border-l-emerald-600{% elif o.ticket.event.category == 'concert' or o.ticket.event.category == 'festival' %}border-l-amber-500{% else %}border-l-indigo-600{% endif %} border border-neutral-200 group overflow-hidden flex flex-col justify-between gap-4"
+          data-category="{{ o.ticket.event.category|default:'other'|lower }}"
+          data-type="{{ o.order_type|lower }}"
+          data-search="{{ o.order_number }} {{ o.ticket.ticket_ref }} {{ o.ticket.booking_reference }} {{ o.ticket.event.title }} {{ o.ticket.event.venue_or_route }} {{ o.attendee_name }} {{ o.ticket.seat_or_coach }} {{ o.ticket.event.category }}">
+
+          <!-- Main Top Row Grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+            
+            <!-- Col 1: Event & Departure Info (5 cols) -->
+            <div class="lg:col-span-5 flex items-start gap-3.5">
+              <div class="w-11 h-11 rounded-xl {% if o.ticket.event.category == 'train' %}bg-orange-50 text-[#FF6600] border-orange-200{% elif o.ticket.event.category == 'flight' %}bg-neutral-100 text-neutral-900 border-neutral-300{% elif o.ticket.event.category == 'sports' %}bg-emerald-50 text-emerald-700 border-emerald-200{% elif o.ticket.event.category == 'concert' or o.ticket.event.category == 'festival' %}bg-amber-50 text-amber-600 border-amber-200{% else %}bg-indigo-50 text-indigo-700 border-indigo-200{% endif %} flex items-center justify-center shrink-0 border shadow-xs">
+                <span class="material-symbols-outlined text-[24px]">
+                  {% if o.ticket.event.category == 'train' %}train{% elif o.ticket.event.category == 'flight' %}flight{% elif o.ticket.event.category == 'sports' %}sports_cricket{% elif o.ticket.event.category == 'movie' %}movie{% elif o.ticket.event.category == 'concert' or o.ticket.event.category == 'festival' %}music_note{% else %}confirmation_number{% endif %}
+                </span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                  <span class="text-[10px] font-display-hero font-bold px-2 py-0.5 rounded {% if o.ticket.event.category == 'train' %}bg-orange-100 text-orange-800 border border-orange-200{% elif o.ticket.event.category == 'flight' %}bg-neutral-200 text-neutral-900 border border-neutral-300{% elif o.ticket.event.category == 'sports' %}bg-emerald-100 text-emerald-800 border border-emerald-200{% elif o.ticket.event.category == 'concert' or o.ticket.event.category == 'festival' %}bg-amber-100 text-amber-800 border border-amber-200{% else %}bg-indigo-100 text-indigo-800 border border-indigo-200{% endif %} uppercase tracking-wider">
+                    {{ o.ticket.event.category|default:'Ticket' }}
+                  </span>
+                  {% if o.order_type == 'DIRECT' %}
+                    <span class="text-[10px] font-display-hero font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 uppercase tracking-wider">
+                      Direct Booking
+                    </span>
+                  {% else %}
+                    <span class="text-[10px] font-display-hero font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wider">
+                      Peer Resale
+                    </span>
+                  {% endif %}
+                </div>
+                <h2 class="font-display-hero font-black text-base sm:text-lg text-neutral-900 tracking-tight leading-snug truncate" title="{{ o.ticket.event.title }}">
+                  {{ o.ticket.event.title|default:'Ticket Order' }}
+                </h2>
+                <div class="flex items-center gap-1.5 text-xs text-neutral-500 mt-0.5 truncate">
+                  <span class="material-symbols-outlined text-[14px] text-amber-600 shrink-0">location_on</span>
+                  <span class="truncate" title="{{ o.ticket.event.venue_or_route }}">{{ o.ticket.event.venue_or_route|default:'Venue on ticket pass' }}</span>
+                </div>
+                {% if o.ticket.event.start_time %}
+                  <div class="font-mono text-[11px] text-neutral-700 font-semibold mt-1 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[13px] text-neutral-400">schedule</span>
+                    <span>{{ o.ticket.event.start_time|date:"M d, Y • h:i A" }}</span>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Col 2: Seat & Placement Info (3 cols) -->
+            <div class="lg:col-span-3 flex flex-col justify-center gap-1 bg-neutral-50/80 p-3 rounded-xl border border-neutral-200/80 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] uppercase font-display-hero font-bold text-neutral-400 tracking-wider">Placement</span>
+                <span class="font-display-hero font-bold text-neutral-900 truncate max-w-[130px]" title="{{ o.ticket.seat_or_coach }}">{{ o.ticket.seat_or_coach|default:'Standard Seat' }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] uppercase font-display-hero font-bold text-neutral-400 tracking-wider">Attendee</span>
+                <span class="font-display-hero font-semibold text-neutral-800 truncate max-w-[130px]" title="{{ o.attendee_name }}">{{ o.attendee_name|default:user.username }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] uppercase font-display-hero font-bold text-neutral-400 tracking-wider">Date Booked</span>
+                <span class="font-mono text-[11px] text-neutral-600 font-medium">{{ o.created_at|date:"d M Y" }}</span>
+              </div>
+            </div>
+
+            <!-- Col 3: Order Identifiers & Total (4 cols) -->
+            <div class="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end justify-between gap-2.5">
+              <div class="flex flex-col sm:items-end lg:items-end text-left sm:text-right">
+                <span class="font-display-hero font-black text-2xl text-neutral-900 tracking-tight block">
+                  ₹{{ o.total_amount }}
+                </span>
+                <div class="mt-1">
+                  {% if o.status == 'COMPLETED' %}
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-display-hero font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span>Confirmed &amp; Issued</span>
+                    </span>
+                  {% elif o.status == 'PAID' %}
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-display-hero font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
+                      <span>Payment Captured</span>
+                    </span>
+                  {% elif o.status == 'PENDING' %}
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-display-hero font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200">
+                      <span>Payment Pending</span>
+                    </span>
+                  {% else %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-display-hero font-bold uppercase tracking-wider bg-neutral-100 text-neutral-700 border border-neutral-200">
+                      {{ o.status }}
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Order / Ref Tokens -->
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="font-mono text-[11px] font-bold text-neutral-800 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200">
+                  ORD: {{ o.order_number }}
+                </span>
+                {% if o.ticket and o.ticket.ticket_ref %}
+                  <span class="font-mono text-[11px] text-neutral-500 bg-neutral-50 px-1.5 py-0.5 rounded border border-neutral-200">
+                    PASS #{{ o.ticket.ticket_ref }}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Perforated Divider Line with Cutout Notches -->
+          <div class="relative w-full flex items-center py-0">
+            <div class="w-4 h-4 rounded-full bg-[#f9f9f7] border border-neutral-200 -ml-2 shrink-0"></div>
+            <div class="flex-1 h-0 border-b border-dashed border-neutral-200 mx-1"></div>
+            <div class="w-4 h-4 rounded-full bg-[#f9f9f7] border border-neutral-200 -mr-2 shrink-0"></div>
+          </div>
+
+          <!-- Bottom Action Bar & Verification Stamped Machine Stub -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-0">
+            <div class="flex items-center gap-3 text-xs text-neutral-500 min-w-0">
+              <div class="h-6 w-14 barcode-lines rounded-xs opacity-70 shrink-0" title="Machine readable barcode"></div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-mono text-[10px] text-neutral-600 font-semibold truncate">
+                  {% if o.razorpay_order_id %}RZP: {{ o.razorpay_order_id }}{% else %}AUTH: DIGILOCKER-SECURE-{{ o.id }}{% endif %}
+                </span>
+                <span class="text-[10px] font-display-hero text-neutral-400 uppercase tracking-wider">
+                  Provider: {{ o.ticket.event.provider.name|default:'Official Issuer' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Action CTAs Group -->
+            <div class="flex items-center gap-2 self-start sm:self-center shrink-0">
+              {% if o.ticket and o.ticket.id %}
+                <a href="{% url 'ticket-detail-view' o.ticket.id %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-black text-white font-display-hero text-xs font-bold uppercase tracking-wider transition-all shadow-xs">
+                  <span class="material-symbols-outlined text-[15px] text-[#FF6600]">qr_code_2</span>
+                  <span>View Pass</span>
+                </a>
+                <a href="{% url 'ticket-download-pdf' o.ticket.id %}" class="w-8 h-8 rounded-lg bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 flex items-center justify-center text-neutral-800 transition-colors" title="Download Offline PDF">
+                  <span class="material-symbols-outlined text-[16px]">download</span>
+                </a>
+              {% else %}
+                <a href="{% url 'ticket-vault' %}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-display-hero text-xs font-bold uppercase tracking-wider transition-colors border border-neutral-200">
+                  <span>Vault</span>
+                </a>
+              {% endif %}
+
+              <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white hover:bg-orange-50 text-neutral-800 hover:text-[#FF6600] border border-neutral-200 font-display-hero text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer" onclick="openInvoiceModal('{{ o.order_number|escapejs }}', '{{ o.created_at|date:'M d, Y • h:i A'|escapejs }}', '{{ o.ticket.event.title|default:'Ticket Booking'|escapejs }}', '{{ o.ticket.event.venue_or_route|default:'Venue on ticket pass'|escapejs }}', '{{ o.ticket.event.category|default:'Event'|upper|escapejs }}', '{{ o.ticket.seat_or_coach|default:'General'|escapejs }}', '{{ o.attendee_name|default:user.username|escapejs }}', '₹{{ o.ticket_price }}', '₹{{ o.service_fee|default:'0.00' }}', '₹{{ o.total_amount }}', '{% if o.razorpay_order_id %}{{ o.razorpay_order_id|escapejs }}{% else %}PAY-UPI-IMPS-{{ o.id }}{% endif %}', '{% if o.ticket and o.ticket.ticket_ref %}{{ o.ticket.ticket_ref|escapejs }}{% else %}ORD-{{ o.id }}{% endif %}')">
+                <span class="material-symbols-outlined text-[15px]">receipt</span>
+                <span>Receipt</span>
+              </button>
+            </div>
+          </div>
+
+        </article>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+</div>
+
+<!-- Interactive Digital Invoice & Receipt Modal Overlay -->
+<div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4" id="invoice-modal">
+  <div class="bg-white max-w-lg w-full rounded-3xl shadow-2xl overflow-hidden flex flex-col relative animate-in fade-in zoom-in-95 duration-150 border border-neutral-200">
+    <!-- Top Modal Header Ribbon -->
+    <div class="p-5 bg-neutral-900 text-white flex items-center justify-between border-b border-neutral-800">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-[#FF6600] text-white flex items-center justify-center font-bold shadow-xs">
+          <span class="material-symbols-outlined text-[18px]">verified</span>
+        </div>
+        <div>
+          <span class="font-display-hero font-bold text-xs uppercase tracking-wider text-neutral-300 block">DigiLocker Certified</span>
+          <span class="font-display-hero font-black text-sm text-white tracking-tight">Official Order Tax Receipt</span>
+        </div>
+      </div>
+      <button class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer" onclick="closeInvoiceModal()" type="button" aria-label="Close modal">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+
+    <!-- Invoice Body -->
+    <div class="p-6 flex flex-col gap-4 bg-white max-h-[75vh] overflow-y-auto">
+      <!-- Order Meta Bar -->
+      <div class="flex items-center justify-between pb-3 border-b border-neutral-200">
+        <div>
+          <span class="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">Order Reference</span>
+          <span class="font-mono text-xs font-bold text-neutral-900" id="inv-order-number">-</span>
+        </div>
+        <div class="text-right">
+          <span class="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">Issued Timestamp</span>
+          <span class="font-mono text-xs font-bold text-neutral-800" id="inv-date">-</span>
+        </div>
+      </div>
+
+      <!-- Event & Destination Block -->
+      <div class="bg-neutral-50 p-4 rounded-2xl border border-neutral-200 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="font-display-hero text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 uppercase tracking-wider" id="inv-category">EVENT</span>
+          <span class="font-mono text-[10px] text-neutral-500" id="inv-ticket-ref">Ref: -</span>
+        </div>
+        <h4 class="font-display-hero font-black text-lg text-neutral-900 tracking-tight mt-0.5" id="inv-title">-</h4>
+        <p class="text-xs text-neutral-500 flex items-center gap-1" id="inv-venue">-</p>
+
+        <div class="grid grid-cols-2 gap-3 pt-2 mt-2 border-t border-neutral-200/80 text-xs">
+          <div>
+            <span class="text-[10px] uppercase font-display-hero font-bold text-neutral-400 tracking-wider block">Seat Allocation</span>
+            <span class="font-display-hero font-bold text-neutral-900 mt-0.5 block" id="inv-seat">-</span>
+          </div>
+          <div>
+            <span class="text-[10px] uppercase font-display-hero font-bold text-neutral-400 tracking-wider block">Attendee Name</span>
+            <span class="font-display-hero font-bold text-neutral-900 mt-0.5 block" id="inv-attendee">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial Itemized Breakdown -->
+      <div class="space-y-2 text-xs">
+        <div class="flex justify-between text-neutral-600">
+          <span>Ticket Face Value</span>
+          <span class="font-mono font-bold text-neutral-900" id="inv-face-value">₹0.00</span>
+        </div>
+        <div class="flex justify-between text-neutral-600">
+          <span>Booking Service Fee</span>
+          <span class="font-mono font-bold text-neutral-900" id="inv-service-fee">₹0.00</span>
+        </div>
+        <div class="flex justify-between text-emerald-700">
+          <span>Platform Resale Protection Markup</span>
+          <span class="font-mono font-bold">₹0.00 (Zero Markup Policy)</span>
+        </div>
+        <div class="flex justify-between items-center pt-3 border-t border-dashed border-neutral-300 text-sm font-bold text-neutral-900">
+          <span class="font-display-hero font-black">Total Paid (INR)</span>
+          <span class="font-display-hero font-black text-emerald-600 text-lg" id="inv-total">₹0.00</span>
+        </div>
+      </div>
+
+      <!-- Payment & Security Auth -->
+      <div class="bg-neutral-50 p-3 rounded-xl border border-neutral-200 flex items-center justify-between text-xs text-neutral-600">
+        <span>Payment Transaction ID:</span>
+        <span class="font-mono font-semibold text-neutral-900" id="inv-payment-id">-</span>
+      </div>
+
+      <!-- Barcode Strip -->
+      <div class="p-3 bg-neutral-50 rounded-xl border border-neutral-200 flex flex-col items-center justify-center gap-1.5">
+        <div class="h-7 w-48 barcode-lines rounded-xs opacity-75"></div>
+        <span class="font-mono text-[9px] tracking-widest text-neutral-500 uppercase">OFFICIAL-LASTCHANCE-TAX-INVOICE-VALIDATED</span>
+      </div>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="p-4 bg-neutral-50 border-t border-neutral-200 flex items-center justify-end gap-2.5">
+      <button class="px-4 py-2 rounded-xl text-xs font-display-hero font-bold bg-white border border-neutral-200 text-neutral-800 hover:bg-neutral-100 transition-colors cursor-pointer" onclick="closeInvoiceModal()" type="button">
+        Close Receipt
+      </button>
+      <button class="px-4 py-2 rounded-xl text-xs font-display-hero font-bold bg-[#FF6600] text-white hover:bg-[#e05a00] transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer" onclick="window.print()" type="button">
+        <span class="material-symbols-outlined text-[15px]">print</span>
+        <span>Print Receipt</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Client-side Interactive Script -->
+<script>
+  (function () {
+    // 1. Dynamic category count computation from loaded orders
+    const cards = document.querySelectorAll('.order-card');
+    let trainCount = 0;
+    let flightCount = 0;
+    let concertCount = 0;
+    let sportsCount = 0;
+
+    cards.forEach(c => {
+      const cat = (c.getAttribute('data-category') || '').toLowerCase();
+      if (cat.includes('train')) trainCount++;
+      else if (cat.includes('flight')) flightCount++;
+      else if (cat.includes('concert') || cat.includes('festival') || cat.includes('music')) concertCount++;
+      else if (cat.includes('sports')) sportsCount++;
+    });
+
+    const elTrain = document.getElementById('tab-count-train');
+    const elFlight = document.getElementById('tab-count-flight');
+    const elConcert = document.getElementById('tab-count-concert');
+    const elSports = document.getElementById('tab-count-sports');
+
+    if (elTrain) elTrain.innerText = trainCount;
+    if (elFlight) elFlight.innerText = flightCount;
+    if (elConcert) elConcert.innerText = concertCount;
+    if (elSports) elSports.innerText = sportsCount;
+
+    // 2. Filter Tabs behavior
+    const filterTabs = document.querySelectorAll('.order-filter-tab');
+    filterTabs.forEach(tab => {
+      tab.addEventListener('click', function() {
+        filterTabs.forEach(t => {
+          t.classList.remove('bg-[#111111]', 'text-white');
+          t.classList.add('bg-neutral-100', 'text-neutral-700');
+        });
+        this.classList.remove('bg-neutral-100', 'text-neutral-700');
+        this.classList.add('bg-[#111111]', 'text-white');
+
+        const filter = this.getAttribute('data-filter');
+        cards.forEach(card => {
+          const cardCat = (card.getAttribute('data-category') || '').toLowerCase();
+          const cardType = (card.getAttribute('data-type') || '').toLowerCase();
+
+          if (filter === 'all') {
+            card.style.display = '';
+          } else if (filter === 'direct' || filter === 'resale') {
+            card.style.display = (cardType === filter) ? '' : 'none';
+          } else if (filter === 'concert') {
+            card.style.display = (cardCat.includes('concert') || cardCat.includes('festival') || cardCat.includes('music')) ? '' : 'none';
+          } else {
+            card.style.display = cardCat.includes(filter) ? '' : 'none';
+          }
+        });
+      });
+    });
+
+    // 3. Quick Search Look-up
+    const searchInput = document.getElementById('order-search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        cards.forEach(card => {
+          const dataStr = (card.getAttribute('data-search') || '').toLowerCase();
+          if (!query || dataStr.includes(query)) {
+            card.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+
+      // CMD + K to focus search
+      window.addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          searchInput.focus();
+        }
+      });
+    }
+
+    // 4. Invoice Receipt Modal Controls
+    window.openInvoiceModal = function(orderNum, dateStr, title, venue, cat, seat, attendee, faceVal, fee, total, payId, ref) {
+      document.getElementById('inv-order-number').innerText = orderNum || '-';
+      document.getElementById('inv-date').innerText = dateStr || '-';
+      document.getElementById('inv-title').innerText = title || '-';
+      document.getElementById('inv-venue').innerText = venue || '-';
+      document.getElementById('inv-category').innerText = cat || 'TICKET';
+      document.getElementById('inv-seat').innerText = seat || '-';
+      document.getElementById('inv-attendee').innerText = attendee || '-';
+      document.getElementById('inv-face-value').innerText = faceVal || '₹0.00';
+      document.getElementById('inv-service-fee').innerText = fee || '₹0.00';
+      document.getElementById('inv-total').innerText = total || '₹0.00';
+      document.getElementById('inv-payment-id').innerText = payId || '-';
+      document.getElementById('inv-ticket-ref').innerText = 'Ref: ' + (ref || '-');
+
+      const modal = document.getElementById('invoice-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    };
+
+    window.closeInvoiceModal = function() {
+      const modal = document.getElementById('invoice-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    };
+
+    // Modal Background click close
+    const invModal = document.getElementById('invoice-modal');
+    if (invModal) {
+      invModal.addEventListener('click', function(e) {
+        if (e.target === invModal) {
+          window.closeInvoiceModal();
+        }
+      });
+    }
+
+    // Escape key to close open modals
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        window.closeInvoiceModal();
+      }
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,358 @@
+/* ==========================================================================
+   lastchance — High-Contrast Kinetic Ticket Design System
+   Source: design.md (Material Design 3 High-Contrast Kinetic Ticket)
+   ========================================================================== */
+
+:root {
+  /* Surface & Canvas Tokens */
+  --surface: #f9f9f7;
+  --surface-dim: #dadad8;
+  --surface-bright: #f9f9f7;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f4f4f2;
+  --surface-container: #eeeeec;
+  --surface-container-high: #e8e8e6;
+  --surface-container-highest: #e2e3e1;
+  --surface-variant: #e2e3e1;
+  --surface-tint: #a33e00;
+
+  /* On-Surface / Typography Tokens */
+  --on-surface: #1a1c1b;
+  --on-surface-variant: #5a4136;
+  --text-main: #111111;
+  --text-muted: #5f5e5e;
+  --text-dim: #8e7164;
+  --text-inverse: #ffffff;
+
+  /* Primary Signal Orange Tokens */
+  --primary: #a33e00;
+  --primary-container: #ff6600;
+  --on-primary: #ffffff;
+  --on-primary-container: #561d00;
+  --primary-fixed: #ffdbcd;
+  --primary-fixed-dim: #ffb596;
+  --on-primary-fixed: #360f00;
+  --on-primary-fixed-variant: #7c2e00;
+
+  /* Secondary Deep Pitch Black Tokens */
+  --secondary: #111111;
+  --on-secondary: #ffffff;
+  --secondary-container: #e5e2e1;
+  --on-secondary-container: #656464;
+  --secondary-fixed: #e5e2e1;
+  --secondary-fixed-dim: #c8c6c5;
+  --on-secondary-fixed: #1c1b1b;
+  --on-secondary-fixed-variant: #474646;
+
+  /* Inverse Surface (Pitch Black #111111) */
+  --inverse-surface: #111111;
+  --inverse-on-surface: #f1f1ef;
+  --inverse-primary: #ffb596;
+
+  /* Tertiary Amber-Gold Trust Architecture */
+  --tertiary: #885200;
+  --tertiary-container: #d68400;
+  --on-tertiary: #ffffff;
+  --on-tertiary-container: #462800;
+  --tertiary-fixed: #ffddbb;
+  --tertiary-fixed-dim: #ffb867;
+  --on-tertiary-fixed: #2b1700;
+  --on-tertiary-fixed-variant: #673d00;
+  --brand-amber: #ec940f;
+
+  /* Outline & Hairlines */
+  --outline: #8e7164;
+  --outline-variant: #e3bfb1;
+  --border-hairline: rgba(17, 17, 17, 0.08);
+  --border-dashed: rgba(17, 17, 17, 0.18);
+
+  /* Status Colors */
+  --error: #ba1a1a;
+  --on-error: #ffffff;
+  --error-container: #ffdad6;
+  --on-error-container: #93000a;
+  --success: #059669;
+  --success-bg: #ecfdf5;
+
+  /* Typography Fonts */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --font-display: 'Outfit', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+  --font-route: 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Radii */
+  --radius-sm: 0.25rem;
+  --radius-DEFAULT: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 4px 16px -2px rgba(0, 0, 0, 0.08);
+  --shadow-elevated: 0 8px 24px -4px rgba(255, 102, 0, 0.16), 0 2px 6px 0 rgba(0, 0, 0, 0.08);
+  --shadow-pitch: 0 8px 28px -4px rgba(0, 0, 0, 0.28);
+}
+
+/* ==========================================================================
+   RESET & GLOBAL TYPOGRAPHY
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
+  background-color: var(--surface);
+  color: var(--on-surface);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--surface);
+  color: var(--on-surface);
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3, h4, h5, h6,
+.font-display,
+.font-heading {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  color: var(--text-main);
+}
+
+.font-route {
+  font-family: var(--font-route);
+}
+
+.font-mono,
+[class*="PNR"],
+[class*="barcode"],
+[class*="DIGILOCKER"],
+[class*="E-TKT"],
+.font-tech,
+.font-code-barcode {
+  font-family: var(--font-mono) !important;
+  letter-spacing: -0.01em;
+}
+
+.font-label-ticket {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+}
+
+/* ==========================================================================
+   BUTTONS (Tactile Signal Orange & Pitch Black)
+   ========================================================================== */
+
+.btn,
+.btn-primary,
+.btn-luxury-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: var(--radius-DEFAULT);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(255, 102, 0, 0.25);
+  background-color: var(--primary-container);
+  color: var(--on-primary);
+  line-height: 1.2;
+}
+
+.btn:hover,
+.btn-primary:hover,
+.btn-luxury-primary:hover {
+  background-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(255, 102, 0, 0.35);
+}
+
+.btn:active,
+.btn-primary:active,
+.btn-luxury-primary:active {
+  transform: translateY(1px);
+}
+
+/* Secondary Pitch Black Button */
+.btn-secondary,
+.btn-dark,
+.btn-luxury-dark {
+  background-color: var(--secondary);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary:hover,
+.btn-dark:hover,
+.btn-luxury-dark:hover {
+  background-color: #1f2120;
+  color: #ffffff;
+}
+
+/* Ghost / Outline Button */
+.btn-outline,
+.btn-ghost {
+  background-color: transparent;
+  color: var(--text-main);
+  border: 1.5px solid var(--secondary);
+  box-shadow: none;
+}
+
+.btn-outline:hover,
+.btn-ghost:hover {
+  background-color: var(--surface-container-high);
+}
+
+/* ==========================================================================
+   AUTHENTIC PERFORATED TICKET CARD
+   ========================================================================== */
+
+.ticket-card,
+.ticket-voucher {
+  position: relative;
+  background-color: var(--surface-container-lowest);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--surface-container-high);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.ticket-card:hover,
+.ticket-voucher:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elevated);
+}
+
+/* Perforation Notches */
+.ticket-notch-row {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--surface-container-lowest);
+  padding: 0 12px;
+}
+
+.ticket-notch-left,
+.ticket-notch-right {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background-color: var(--surface);
+  border-radius: var(--radius-full);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.ticket-notch-left {
+  left: -10px;
+}
+
+.ticket-notch-right {
+  right: -10px;
+}
+
+.ticket-perforation-line {
+  width: 100%;
+  border-top: 2px dashed var(--outline-variant);
+  margin: 0 12px;
+}
+
+/* ==========================================================================
+   INPUT FIELDS & FORMS
+   ========================================================================== */
+
+.input-text,
+.select-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--on-surface);
+  background-color: var(--surface-container-lowest);
+  border: 1px solid var(--surface-container-high);
+  border-radius: var(--radius-DEFAULT);
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.input-text:focus,
+.select-input:focus {
+  border-color: var(--primary-container);
+  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.15);
+}
+
+/* ==========================================================================
+   BADGES & PILLS
+   ========================================================================== */
+
+.badge-amber,
+.verified-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background-color: rgba(236, 148, 15, 0.12);
+  color: var(--tertiary);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid rgba(236, 148, 15, 0.28);
+}
+
+.badge-orange {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background-color: rgba(255, 102, 0, 0.12);
+  color: var(--primary-container);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 102, 0, 0.28);
+}
+
+/* Pitch Black Header Card Accent */
+.bg-pitch-black {
+  background-color: #111111 !important;
+  color: #ffffff !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  display: none;
+}

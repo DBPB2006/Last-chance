@@ -1,0 +1,1185 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ listing.title }} &bull; lastchance{% endblock %}
+
+{% block content %}
+<style>
+  /* Kinetic Ticket & Perforation Styling */
+  .ticket-card {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  }
+  .ticket-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -4px rgba(255, 102, 0, 0.16), 0 2px 6px 0 rgba(0, 0, 0, 0.08);
+  }
+  .row-label {
+    width: 2.25rem;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #5a4136;
+    font-family: 'JetBrains Mono', monospace !important;
+  }
+  .seat-unavailable {
+    opacity: 0.45;
+    cursor: not-allowed !important;
+  }
+  .checkout-btn-disabled {
+    pointer-events: none !important;
+    opacity: 0.45 !important;
+  }
+  .legend-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+  }
+  .legend-swatch.available {
+    background: #ffffff;
+    border: 1.5px solid #8e7164;
+  }
+  .legend-swatch.resale {
+    background: #ffedd5;
+    border: 1.5px solid #ff6600;
+  }
+  .legend-swatch.selected {
+    background: #ff6600;
+    border: 1.5px solid #ff6600;
+  }
+  .legend-swatch.unavailable {
+    background: #e2e3e1;
+    border: 1px solid #cbd5e1;
+  }
+</style>
+
+<div class="flex flex-col w-full pb-36 font-sans">
+
+  <!-- =========================================================================
+       BREADCRUMB & LIVE VERIFICATION STATUS BAR
+       ========================================================================= -->
+  <section class="w-full px-4 sm:px-6 lg:px-8 pt-4 pb-3">
+    <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2 text-on-surface-variant font-label-ticket uppercase tracking-wider">
+        <a class="hover:text-primary-container transition-colors flex items-center gap-1 font-bold no-underline" href="{% url 'explore' %}">
+          <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+          <span>All Passes</span>
+        </a>
+        <span class="text-surface-container-highest">/</span>
+        <a class="hover:text-primary-container transition-colors font-semibold capitalize no-underline" href="{% url 'explore' %}?category={{ listing.category }}">{{ listing.category }}</a>
+        <span class="text-surface-container-highest">/</span>
+        <span class="text-on-surface font-bold truncate max-w-xs">{{ listing.title }}</span>
+      </div>
+
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full {% if is_concluded %}bg-surface-container text-on-surface-variant border border-surface-container-high{% elif is_available %}bg-emerald-50 text-emerald-900 border border-emerald-200{% else %}bg-rose-50 text-rose-900 border border-rose-200{% endif %} shadow-xs font-label-ticket text-xs uppercase tracking-wider font-bold">
+        {% if is_concluded %}
+          <span class="w-2 h-2 rounded-full bg-surface-container-highest"></span>
+          <span class="badge">Event Concluded</span>
+        {% elif is_available %}
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+          </span>
+          <span>
+            {% if listing.category == 'train' %}IRCTC Confirmed Seat Transfer Open (DigiLocker KYC)
+            {% elif listing.category == 'flight' %}IATA Verified Seat Transfer Open (DigiLocker KYC)
+            {% else %}Verified Fair-Price Seat Transfer Open (DigiLocker KYC){% endif %}
+          </span>
+        {% else %}
+          <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+          <span class="badge">Sold Out</span>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <!-- Concluded Notice (shown if event is concluded) -->
+  {% if is_concluded %}
+  <div class="w-full px-4 sm:px-6 lg:px-8 mb-4">
+    <div class="alert w-full bg-surface-container-low border border-surface-container-high rounded-2xl p-4 text-on-surface text-xs sm:text-sm flex items-center gap-3 shadow-xs">
+      <span class="material-symbols-outlined text-on-surface-variant text-xl">history</span>
+      <div>
+        <strong>This event has concluded.</strong> Direct seat bookings and peer-to-peer ticket transfers are closed.
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- =========================================================================
+       KINETIC DEPARTURE BOARD BANNER
+       ========================================================================= -->
+  <section class="w-full px-4 sm:px-6 lg:px-8 mb-6">
+    <div class="rounded-2xl bg-inverse-surface text-inverse-on-surface p-5 sm:p-7 shadow-xl relative overflow-hidden">
+      <!-- Ambient kinetic backdrop lines -->
+      <div class="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+      <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div class="flex flex-col gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded bg-primary-container text-white font-mono text-[11px] font-bold tracking-wider uppercase">
+              {% if listing.category == 'train' and listing.transit_info.train_number %}
+                Train #{{ listing.transit_info.train_number }} &bull; {{ listing.provider_name }}
+              {% elif listing.category == 'flight' and listing.transit_info.train_number %}
+                Flight {{ listing.transit_info.train_number }} &bull; {{ listing.provider_name }}
+              {% else %}
+                {{ listing.provider_name|upper }} &bull; {{ listing.category|upper }} PASS
+              {% endif %}
+            </span>
+            <span class="px-2.5 py-0.5 rounded bg-brand-amber/20 text-brand-amber font-mono text-[11px] font-bold tracking-wider flex items-center gap-1">
+              <span class="material-symbols-outlined text-[13px]">
+                {% if listing.category == 'train' or listing.category == 'flight' %}airline_seat_recline_extra{% else %}confirmation_number{% endif %}
+              </span>
+              {% if listing.event_specs.venue_access %}{{ listing.event_specs.venue_access }}{% elif listing.category == 'train' %}Executive Chair Car{% else %}{{ listing.category|title }} Pass{% endif %}
+            </span>
+          </div>
+
+          <h1 class="text-2xl sm:text-4xl font-headline font-black text-white tracking-tight flex items-center gap-3">
+            {% if listing.category == 'train' or listing.category == 'flight' %}
+              {{ listing.transit_info.orig_name|default:listing.transit_info.orig_code }}
+              <span class="text-primary-container font-mono text-xl sm:text-2xl">&rarr;</span>
+              {{ listing.transit_info.dest_name|default:listing.transit_info.dest_code }}
+            {% else %}
+              {{ listing.title }}
+            {% endif %}
+          </h1>
+
+          <p class="text-xs sm:text-sm text-surface-container-highest font-mono flex flex-wrap items-center gap-3">
+            {% if listing.category == 'train' or listing.category == 'flight' %}
+              <span>DEP: {{ listing.transit_info.dep_time|default:'--' }} ({{ listing.transit_info.gate_or_platform|default:'Platform 4' }})</span>
+              <span>&bull;</span>
+              <span>ARR: {{ listing.transit_info.arr_time|default:'--' }}</span>
+              <span>&bull;</span>
+              <span>DURATION: {{ listing.transit_info.duration_str|default:'Direct' }}</span>
+            {% else %}
+              <span>VENUE: {{ listing.venue_or_route }}</span>
+              <span>&bull;</span>
+              <span>DATE: {{ listing.formatted_date }}</span>
+              {% if listing.event_specs.venue_access %}
+              <span>&bull;</span>
+              <span>ACCESS: {{ listing.event_specs.venue_access }}</span>
+              {% endif %}
+            {% endif %}
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/5 backdrop-blur-md border border-white/10">
+            <div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary-container">
+              <span class="material-symbols-outlined text-[24px]">verified</span>
+            </div>
+            <div>
+              <div class="font-mono text-xs text-surface-container-highest uppercase">Available Tickets</div>
+              <div class="font-headline font-bold text-base text-white">
+                {% if is_available %}
+                  {{ total_available_count }} Verified Ticket{{ total_available_count|pluralize }} Available
+                {% else %}
+                  Sold Out
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/5 backdrop-blur-md border border-white/10">
+            <div class="w-10 h-10 rounded-lg bg-brand-amber/20 flex items-center justify-center text-brand-amber">
+              <span class="material-symbols-outlined text-[24px]">price_check</span>
+            </div>
+            <div>
+              <div class="font-mono text-xs text-surface-container-highest uppercase">Ticket Price</div>
+              <div class="font-headline font-bold text-base text-white">
+                ₹{{ listing.base_price }} <span class="text-[11px] font-mono text-emerald-400 font-semibold">(Original Price, No Markup)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       SPLIT TWO-COLUMN KINETIC WORKSPACE
+       ========================================================================= -->
+  <section class="w-full px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+
+      <!-- =====================================================================
+           LEFT COLUMN: STICKY PERFORATED BOARDING PASS TICKET STUB
+           ===================================================================== -->
+      <div class="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-36">
+
+        <!-- SIGNATURE COMPONENT: Tactile Perforated Ticket Pass -->
+        <div class="ticket-card bg-surface-container-lowest rounded-2xl shadow-xl overflow-hidden relative border border-surface-container-high/80" id="featured-resale-card">
+
+          <!-- Upper Stub: Carrier & Operational Header -->
+          <div class="bg-primary-container p-4 sm:p-5 text-white flex items-center justify-between">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="material-symbols-outlined text-[22px] shrink-0">
+                {% if listing.category == 'train' %}train{% elif listing.category == 'flight' %}flight{% elif listing.category == 'movie' %}movie{% elif listing.category == 'sports' %}sports_cricket{% else %}confirmation_number{% endif %}
+              </span>
+              <div class="min-w-0">
+                <div class="font-mono text-[10px] font-bold tracking-widest uppercase opacity-90 truncate">
+                  Official {{ listing.provider_name }} Booking &bull; Ticket #<span id="stub-ref-tag">{% if selected_ticket %}{{ selected_ticket.ticket_ref }}{% else %}{{ listing.ticket_ref }}{% endif %}</span>
+                </div>
+                <div class="font-headline font-extrabold text-base tracking-tight leading-none truncate">
+                  {{ listing.title|upper }}
+                </div>
+              </div>
+            </div>
+            <div class="px-2.5 py-1 rounded bg-black/20 backdrop-blur-sm text-[11px] font-mono font-bold tracking-wider flex items-center gap-1 shrink-0">
+              {{ listing.transit_info.gate_or_platform|default:listing.venue_or_route|truncatechars:18|default:'Verified Pass' }}
+            </div>
+          </div>
+
+          <!-- Ticket Body: Route Manifest / Event Details -->
+          <div class="p-5 sm:p-6 bg-surface-container-lowest flex flex-col gap-5">
+            {% if listing.category == 'train' or listing.category == 'flight' %}
+            <div class="flex items-center justify-between pb-3">
+              <!-- Origin Station -->
+              <div>
+                <span class="font-mono text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">From ({{ listing.transit_info.orig_name|default:listing.transit_info.orig_code }})</span>
+                <div class="font-headline text-2xl font-black text-on-surface">{{ listing.transit_info.orig_code }}</div>
+                <div class="text-xs font-semibold text-on-surface-variant truncate max-w-[120px]">{{ listing.transit_info.orig_name }}</div>
+                <div class="font-mono text-xs text-primary font-bold mt-0.5">{{ listing.transit_info.dep_time|default:'05:45 AM' }}</div>
+              </div>
+              <!-- Journey Transit Glyphs -->
+              <div class="flex flex-col items-center px-4 flex-1">
+                <span class="font-mono text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+                  {{ listing.transit_info.duration_str|default:'DIRECT' }}
+                </span>
+                <div class="w-full flex items-center gap-1">
+                  <div class="h-1.5 w-1.5 rounded-full bg-primary-container"></div>
+                  <div class="h-0.5 flex-1 bg-surface-container-highest relative">
+                    <span class="material-symbols-outlined absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14px] text-primary-container rotate-90">navigation</span>
+                  </div>
+                  <div class="h-1.5 w-1.5 rounded-full bg-primary"></div>
+                </div>
+                <span class="font-mono text-[10px] text-emerald-700 font-bold mt-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  {{ listing.transit_info.middle_badge|default:'CONFIRMED (CNF)' }}
+                </span>
+              </div>
+              <!-- Destination Station -->
+              <div class="text-right">
+                <span class="font-mono text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">To ({{ listing.transit_info.dest_name|default:listing.transit_info.dest_code }})</span>
+                <div class="font-headline text-2xl font-black text-on-surface">{{ listing.transit_info.dest_code }}</div>
+                <div class="text-xs font-semibold text-on-surface-variant truncate max-w-[120px]">{{ listing.transit_info.dest_name }}</div>
+                <div class="font-mono text-xs text-primary font-bold mt-0.5">{{ listing.transit_info.arr_time|default:'09:10 PM' }}</div>
+              </div>
+            </div>
+            {% else %}
+            <!-- General Event Details -->
+            <div class="p-4 rounded-xl bg-surface-container-low border border-surface-container-high/60 flex flex-col gap-3">
+              <div>
+                <span class="font-mono text-[10px] text-on-surface-variant font-bold uppercase tracking-wider block">VENUE / ARENA</span>
+                <div class="font-headline font-bold text-on-surface text-base mt-0.5">{{ listing.venue_or_route }}</div>
+              </div>
+              <div class="h-px bg-surface-container-high w-full"></div>
+              <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                <div>
+                  <span class="text-[10px] text-on-surface-variant uppercase font-bold block">SCHEDULED DATE</span>
+                  <span class="font-bold text-on-surface">{{ listing.formatted_date }}</span>
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] text-on-surface-variant uppercase font-bold block">ACCESS TIER</span>
+                  <span class="font-bold text-primary-container">{{ listing.event_specs.venue_access|default:'Standard Access' }}</span>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- Dense Operational Metadata Matrix (4-Grid) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 rounded-xl bg-surface-container-low text-xs border border-surface-container-high/60">
+              <div>
+                <span class="font-mono text-[10px] uppercase text-on-surface-variant block font-bold">PASSENGER</span>
+                <span class="font-bold text-on-surface text-sm truncate block">
+                  {% if user.is_authenticated %}{{ user.verified_legal_name|default:user.username }}{% else %}DigiLocker KYC{% endif %}
+                </span>
+              </div>
+              <div>
+                <span class="font-mono text-[10px] uppercase text-on-surface-variant block font-bold">TRAVEL DATE</span>
+                <span class="font-bold text-on-surface text-sm block truncate">{{ listing.formatted_date_only }}</span>
+              </div>
+              <div>
+                <span class="font-mono text-[10px] uppercase text-on-surface-variant block font-bold">SEAT / BERTH</span>
+                <span class="font-bold text-primary-container text-sm block truncate" id="stub-seat-number">
+                  {% if selected_ticket %}{{ selected_ticket.seat_or_coach }}{% else %}Select Seat{% endif %}
+                </span>
+              </div>
+              <div>
+                <span class="font-mono text-[10px] uppercase text-on-surface-variant block font-bold">Class</span>
+                <span class="font-bold text-on-surface text-sm block truncate" id="stub-seat-class">
+                  {% if selected_ticket and not selected_ticket.is_direct %}Verified Resale (Fixed Seat){% elif selected_ticket %}Official Pass{% elif listing.category == 'train' %}Executive Chair Car{% else %}{{ listing.event_specs.venue_access|default:'Standard Access' }}{% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- PERFORATION NOTCH ROW (Signature Aesthetic Cutout) -->
+          <div class="relative w-full h-6 flex items-center bg-surface-container-lowest">
+            <!-- Left Concave Radial Cutout Notch -->
+            <div class="w-6 h-6 rounded-r-full bg-surface absolute -left-3 shadow-inner"></div>
+            <!-- Dashed Perforation Seam Line -->
+            <div class="w-full mx-4 border-t-2 border-dashed border-surface-container-highest"></div>
+            <!-- Right Concave Radial Cutout Notch -->
+            <div class="w-6 h-6 rounded-l-full bg-surface absolute -right-3 shadow-inner"></div>
+          </div>
+
+          <!-- Lower Perforated Stub: Security Barcode, Buyer Guarantee & Fare Breakdown -->
+          <div class="p-5 sm:p-6 bg-surface-container-low flex flex-col gap-4">
+
+            <!-- Resale Ticket Fixed Seat Callout -->
+            <div id="resale-fixed-banner" class="resale-fixed-banner p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-900 flex flex-col gap-1" style="display: {% if selected_ticket and not selected_ticket.is_direct %}flex{% else %}none{% endif %};">
+              <div class="flex items-center gap-1.5 font-bold flex-wrap">
+                <span class="material-symbols-outlined text-[#059669] text-[16px]">verified</span>
+                <span>Verified Peer-to-Peer Resale</span>
+                <span class="bg-white text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded text-[10px] font-semibold">Fixed Assigned Seat</span>
+                <span class="bg-emerald-100 text-emerald-900 border border-emerald-300 px-1.5 py-0.5 rounded text-[10px] font-semibold">1-of-1 Pass</span>
+              </div>
+              <p class="text-[11px] text-emerald-800 leading-relaxed m-0">
+                The buyer receives this exact assigned seat upon purchase — no seat selection is required. Resale tickets are strictly 1-of-1 individual passes.
+              </p>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-brand-amber/15 text-tertiary text-[11px] font-mono font-bold tracking-wider">
+                <span class="material-symbols-outlined text-[14px] text-brand-amber">verified</span>
+                <span id="stub-pass-badge">{% if selected_ticket and not selected_ticket.is_direct %}Verified Resale (Fixed Seat){% else %}Guaranteed Seat &bull; Single Ticket{% endif %}</span>
+              </span>
+            </div>
+
+            <!-- Scannable Machine Barcode Visual Accent -->
+            <div class="p-3 bg-surface-container-lowest rounded-xl flex flex-col items-center justify-center gap-1.5 shadow-sm border border-surface-container-high/60">
+              <svg class="w-full h-10 text-on-surface" preserveAspectRatio="none" viewBox="0 0 280 48">
+                <rect fill="currentColor" height="48" width="3" x="0" y="0"></rect>
+                <rect fill="currentColor" height="48" width="1" x="5" y="0"></rect>
+                <rect fill="currentColor" height="48" width="4" x="8" y="0"></rect>
+                <rect fill="currentColor" height="48" width="2" x="14" y="0"></rect>
+                <rect fill="currentColor" height="48" width="1" x="19" y="0"></rect>
+                <rect fill="currentColor" height="48" width="5" x="23" y="0"></rect>
+                <rect fill="currentColor" height="48" width="2" x="31" y="0"></rect>
+                <rect fill="currentColor" height="48" width="3" x="35" y="0"></rect>
+                <rect fill="currentColor" height="48" width="1" x="41" y="0"></rect>
+                <rect fill="currentColor" height="48" width="4" x="45" y="0"></rect>
+                <rect fill="currentColor" height="48" width="2" x="52" y="0"></rect>
+                <rect fill="currentColor" height="48" width="6" x="56" y="0"></rect>
+                <rect fill="currentColor" height="48" width="2" x="65" y="0"></rect>
+                <rect fill="currentColor" height="48" width="3" x="70" y="0"></rect>
+                <rect fill="currentColor" height="48" width="1" x="76" y="0"></rect>
+                <rect fill="currentColor" height="48" width="4" x="80" y="0"></rect>
+                <rect fill="currentColor" height="48" width="2" x="87" y="0"></rect>
+                <rect fill="currentColor" height="48" width="5" x="92" y="0"></rect>
+                <rect fill="currentColor" height="48" width="1" x="100" y="0"></rect>
+                <rect fill="currentColor" height="48" width="3" x="104" y="0"></rect>
+                <rect fill="currentColor" height="48" width="2" x="110" y="0"></rect>
+                <rect fill="currentColor" height="48" width="5" x="115" y="0"></rect>
+                <rect fill="currentColor" height="48" width="2" x="123" y="0"></rect>
+                <rect fill="currentColor" height="48" width="3" x="128" y="0"></rect>
+                <rect fill="currentColor" height="48" width="1" x="134" y="0"></rect>
+                <rect fill="currentColor" height="48" width="4" x="138" y="0"></rect>
+                <rect fill="currentColor" height="48" width="2" x="145" y="0"></rect>
+                <rect fill="currentColor" height="48" width="6" x="150" y="0"></rect>
+                <rect fill="currentColor" height="48" width="1" x="159" y="0"></rect>
+                <rect fill="currentColor" height="48" width="3" x="163" y="0"></rect>
+                <rect fill="currentColor" height="48" width="2" x="169" y="0"></rect>
+                <rect fill="currentColor" height="48" width="5" x="174" y="0"></rect>
+                <rect fill="currentColor" height="48" width="2" x="182" y="0"></rect>
+                <rect fill="currentColor" height="48" width="4" x="187" y="0"></rect>
+                <rect fill="currentColor" height="48" width="1" x="194" y="0"></rect>
+                <rect fill="currentColor" height="48" width="3" x="198" y="0"></rect>
+                <rect fill="currentColor" height="48" width="2" x="204" y="0"></rect>
+                <rect fill="currentColor" height="48" width="6" x="209" y="0"></rect>
+                <rect fill="currentColor" height="48" width="1" x="218" y="0"></rect>
+                <rect fill="currentColor" height="48" width="4" x="222" y="0"></rect>
+                <rect fill="currentColor" height="48" width="2" x="229" y="0"></rect>
+                <rect fill="currentColor" height="48" width="3" x="234" y="0"></rect>
+                <rect fill="currentColor" height="48" width="1" x="240" y="0"></rect>
+                <rect fill="currentColor" height="48" width="5" x="244" y="0"></rect>
+                <rect fill="currentColor" height="48" width="2" x="252" y="0"></rect>
+                <rect fill="currentColor" height="48" width="3" x="257" y="0"></rect>
+                <rect fill="currentColor" height="48" width="2" x="263" y="0"></rect>
+                <rect fill="currentColor" height="48" width="4" x="268" y="0"></rect>
+                <rect fill="currentColor" height="48" width="3" x="275" y="0"></rect>
+              </svg>
+              <div class="font-mono text-[10px] tracking-[0.25em] text-on-surface-variant font-bold uppercase truncate">
+                *<span id="stub-barcode-ref">{% if selected_ticket %}{{ selected_ticket.ticket_ref }}{% else %}{{ listing.ticket_ref }}{% endif %}</span>*
+              </div>
+            </div>
+
+            <!-- Tabular Fare Transparency Breakdown (Zero Scalping Policy) -->
+            <div class="flex flex-col gap-1.5 text-xs font-mono">
+              <div class="flex justify-between text-on-surface-variant">
+                <span>Original Ticket Price</span>
+                <span class="font-bold text-on-surface" id="stub-math-face">₹{% if selected_ticket and selected_ticket.face_value %}{{ selected_ticket.face_value }}{% else %}{{ listing.base_price }}{% endif %}</span>
+              </div>
+              <div class="flex justify-between text-on-surface-variant">
+                <span>Buyer Protection &amp; Verification</span>
+                <span class="text-emerald-700 font-bold">Free</span>
+              </div>
+              <div class="flex justify-between text-on-surface-variant">
+                <span>Extra Markup</span>
+                <span class="text-emerald-700 font-bold">₹0.00 (Zero Markup)</span>
+              </div>
+              <div class="pt-2 mt-1 border-t border-dashed border-surface-container-highest flex items-baseline justify-between">
+                <div>
+                  <span class="font-mono text-[10px] uppercase font-bold text-on-surface-variant block">Total Amount</span>
+                </div>
+                <div class="text-right">
+                  <span class="font-headline text-2xl font-black text-primary-container" id="stub-math-total">₹{% if selected_ticket %}{{ selected_ticket.price }}{% else %}{{ listing.base_price }}{% endif %}</span>
+                  <span class="font-mono text-[10px] text-on-surface-variant block">Final Fare</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action CTAs inside ticket stub -->
+            <div class="flex flex-col gap-2 pt-2">
+              {% if is_available %}
+                {% if user.is_authenticated %}
+                  <a id="card-checkout-btn" href="{% if selected_ticket %}{% url 'checkout' selected_ticket.id %}{% else %}#seat-blueprint{% endif %}"
+                    class="w-full py-3.5 px-4 rounded-xl bg-primary-container hover:bg-primary text-white font-headline text-sm font-bold uppercase tracking-wider transition-all shadow-md active:scale-[0.99] flex items-center justify-center gap-2 no-underline {% if not selected_ticket or is_owner %}pointer-events-none opacity-50{% endif %}">
+                    <span class="material-symbols-outlined text-[18px]">lock</span>
+                    <span id="card-checkout-text">
+                      {% if not user.is_identity_verified and selected_ticket %}
+                        Verify Identity to Buy &rarr;
+                      {% elif selected_ticket %}
+                        Continue with Seat {{ selected_ticket.seat_or_coach }} &rarr;
+                      {% else %}
+                        Select an Available Seat Below
+                      {% endif %}
+                    </span>
+                  </a>
+                {% else %}
+                  <a id="card-checkout-btn" href="{% if selected_ticket %}{% url 'login' %}?next={% url 'checkout' selected_ticket.id %}{% else %}{% url 'login' %}{% endif %}"
+                    class="w-full py-3.5 px-4 rounded-xl bg-primary-container hover:bg-primary text-white font-headline text-sm font-bold uppercase tracking-wider transition-all shadow-md active:scale-[0.99] flex items-center justify-center gap-2 no-underline {% if not selected_ticket %}pointer-events-none opacity-50{% endif %}">
+                    <span class="material-symbols-outlined text-[18px]">lock</span>
+                    <span id="card-checkout-text">Log In to Buy &rarr;</span>
+                  </a>
+                {% endif %}
+              {% else %}
+                <button disabled class="w-full py-3.5 px-4 rounded-xl bg-surface-container-highest text-on-surface-variant font-headline text-sm font-bold uppercase tracking-wider cursor-not-allowed flex items-center justify-center gap-2">
+                  <span>{% if is_concluded %}Event Ended{% else %}Sold Out{% endif %}</span>
+                </button>
+              {% endif %}
+
+              <div class="flex items-center justify-between text-[11px] font-mono text-on-surface-variant px-1">
+                <span class="font-bold text-primary">Seat held for: 10:00 &bull; Reserved for you</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Verified Resale Seats Drawer / Seller Credibility Card -->
+        <div class="rounded-2xl bg-surface-container-lowest p-5 shadow-sm flex flex-col gap-4 border border-surface-container-high/80">
+          <div class="flex items-center justify-between">
+            <h3 class="font-headline font-bold text-base text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary-container text-[20px]">person_check</span>
+              <span id="seller-card-title">{% if selected_ticket and not selected_ticket.is_direct %}Verified Seller{% else %}Verified Partner{% endif %}</span>
+            </h3>
+            <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-mono text-[10px] font-bold uppercase">
+              Identity Verified
+            </span>
+          </div>
+
+          <div class="flex items-center gap-3 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/60">
+            <div class="w-12 h-12 rounded-xl bg-inverse-surface text-inverse-on-surface flex items-center justify-center font-bold text-sm shadow-inner shrink-0" id="seller-avatar">
+              {% if selected_ticket and not selected_ticket.is_direct %}{{ selected_ticket.seller_username|slice:":2"|upper }}{% else %}{{ listing.provider_name|slice:":2"|upper }}{% endif %}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="font-headline font-bold text-sm text-on-surface truncate" id="seller-display-name">
+                  {% if selected_ticket and not selected_ticket.is_direct %}@{{ selected_ticket.seller_username }}{% else %}{{ listing.provider_name }}{% endif %}
+                </span>
+                <span class="material-symbols-outlined text-[16px] text-brand-amber">verified</span>
+              </div>
+              <div class="flex items-center gap-1 text-[11px] text-emerald-700 font-medium mt-0.5" id="seller-transfer-note">
+                <span class="material-symbols-outlined text-[13px]">schedule</span> 100% On-Time Transfer
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="font-mono text-xs font-bold text-on-surface">⭐ 4.98</div>
+              <span class="text-[10px] text-on-surface-variant font-mono">Trusted Seller</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Other Available Resale Tickets -->
+        {% if has_resale_tickets %}
+        <div class="rounded-2xl bg-surface-container-lowest p-5 shadow-sm flex flex-col gap-3 border border-surface-container-high/80">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-primary-container text-[18px]">swap_horizontal_circle</span>
+              <h2 class="text-sm font-bold text-on-surface font-headline">Verified Resale Tickets (Fixed Seats)</h2>
+            </div>
+            <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-bold font-mono">
+              {{ resale_tickets|length }} Resale Seat{{ resale_tickets|length|pluralize }} Available
+            </span>
+          </div>
+          <span class="text-[11px] text-on-surface-variant font-mono">No seat selection needed • Pre-owned tickets from verified attendees with fixed seats</span>
+
+          <div class="flex flex-col gap-2">
+            {% for r in resale_tickets %}
+            <div class="resale-card p-3 rounded-xl bg-surface-container-low border {% if selected_ticket and selected_ticket.id == r.id %}border-primary-container ring-2 ring-primary-container/30{% else %}border-surface-container-high hover:border-primary-container/50{% endif %} cursor-pointer transition-all shadow-xs flex items-center justify-between group"
+              data-id="{{ r.id }}" data-seat="{{ r.seat_or_coach }}" data-price="{{ r.price }}"
+              data-type="{{ r.badge_text }}" data-is-direct="false" data-seller="{{ r.seller_username }}"
+              data-face="{{ r.face_value|default:r.price }}" data-fee="{{ r.service_fee|default:'0.00' }}"
+              data-ref="{{ r.ticket_ref }}"
+              data-is-self="{% if user.is_authenticated and r.seller_username and user.username == r.seller_username %}true{% else %}false{% endif %}"
+              onclick="selectSeat('{{ r.id }}', '{{ r.seat_or_coach|escapejs }}', 'resale', '{{ r.price }}', '{{ r.seller_username }}', '{{ r.face_value|default:r.price }}', '{{ r.service_fee|default:0.00 }}', '{{ r.ticket_ref }}')"
+              tabindex="0" role="button">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-primary-container/15 text-primary-container flex items-center justify-center font-bold shrink-0">
+                  <span class="material-symbols-outlined text-[18px]">airline_seat_recline_normal</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-xs text-on-surface">{{ r.seat_or_coach }}</span>
+                    <span class="text-[9px] bg-emerald-50 text-emerald-800 px-1.5 py-0.2 rounded font-bold">KYC Verified</span>
+                    <span class="text-[9px] bg-surface-container text-on-surface-variant px-1.5 py-0.2 rounded font-bold font-mono">1-of-1 Pass</span>
+                  </div>
+                  <span class="text-[11px] text-on-surface-variant font-mono">Seller: @{{ r.seller_username }} &bull; DigiLocker</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="font-mono text-sm font-bold text-on-surface">₹{{ r.price }}</div>
+                <span class="text-[11px] text-primary-container font-bold group-hover:underline">
+                  {% if selected_ticket and selected_ticket.id == r.id %}&#10003; Selected{% else %}Select Seat &rarr;{% endif %}
+                </span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <!-- =====================================================================
+           RIGHT COLUMN: CINEMATIC VISUAL, EVENT SPECS & INTERACTIVE BLUEPRINT
+           ===================================================================== -->
+      <div class="lg:col-span-7 flex flex-col gap-6">
+
+        <!-- Visual Hero Showcase Card -->
+        <div class="rounded-2xl bg-surface-container-lowest overflow-hidden shadow-sm flex flex-col border border-surface-container-high/80">
+          <div class="relative h-64 sm:h-72 w-full overflow-hidden bg-inverse-surface">
+            {% if listing.image_url %}
+            <img class="w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
+                 src="{{ listing.image_url }}"
+                 alt="{{ listing.title }}">
+            {% else %}
+            <div class="w-full h-full bg-cover bg-center" style="background-image: linear-gradient(135deg, #a33e00 0%, #ff6600 60%, #111111 100%);"></div>
+            {% endif %}
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+            <div class="absolute top-4 left-4 flex flex-wrap gap-2">
+              <span class="px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-on-surface font-mono text-[11px] font-bold tracking-wider flex items-center gap-1 shadow-sm">
+                <span class="material-symbols-outlined text-[14px] text-primary-container">speed</span>
+                {{ listing.category|title }} Pass
+              </span>
+              <span class="px-3 py-1 rounded-full bg-primary-container text-white font-mono text-[11px] font-bold tracking-wider shadow-sm">
+                Verified Ticket
+              </span>
+            </div>
+            <div class="absolute bottom-4 left-4 right-4 text-white flex items-end justify-between">
+              <div>
+                <span class="font-mono text-[11px] text-brand-amber uppercase tracking-wider font-bold block mb-1">
+                  {{ listing.provider_name }} Details &amp; Amenities
+                </span>
+                <h2 class="font-headline text-xl sm:text-2xl font-black">
+                  {% if listing.category == 'train' %}Coach C2: Executive Chair Car (2x2){% else %}{{ listing.title }}{% endif %}
+                </h2>
+              </div>
+              <span class="font-mono text-xs text-white/80 bg-white/20 backdrop-blur-md px-2.5 py-1 rounded">
+                {% if listing.category == 'train' %}180° Rotating Seats{% else %}Guaranteed Entry{% endif %}
+              </span>
+            </div>
+          </div>
+
+          <!-- Specs & Guarantee 4-Card Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-px bg-surface-container-high">
+            <div class="p-4 bg-surface-container-lowest flex flex-col gap-1">
+              <span class="font-mono text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Coach Type</span>
+              <span class="font-headline font-bold text-sm text-on-surface truncate">{{ listing.event_specs.venue_access|default:listing.category|title }}</span>
+              <span class="text-[11px] text-primary-container font-mono font-semibold flex items-center gap-1">
+                <span class="material-symbols-outlined text-[12px]">airline_seat_recline_extra</span> Comfortable Seating
+              </span>
+            </div>
+            <div class="p-4 bg-surface-container-lowest flex flex-col gap-1">
+              <span class="font-mono text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Operated By</span>
+              <span class="font-headline font-bold text-sm text-on-surface truncate">{{ listing.provider_name }}</span>
+              <span class="text-[10px] text-on-surface-variant font-mono">Partner Verified</span>
+            </div>
+            <div class="p-4 bg-surface-container-lowest flex flex-col gap-1">
+              <span class="font-mono text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Original Price</span>
+              <span class="font-headline font-bold text-sm text-on-surface">₹{{ listing.base_price }}</span>
+              <span class="text-[11px] text-emerald-700 font-mono font-semibold">Fair Price Cap</span>
+            </div>
+            <div class="p-4 bg-surface-container-lowest flex flex-col gap-1">
+              <span class="font-mono text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Ticket Transfer</span>
+              <span class="font-headline font-bold text-sm text-on-surface">Official Name Change</span>
+              <span class="text-[11px] text-brand-amber font-mono font-semibold flex items-center gap-1">
+                <span class="material-symbols-outlined text-[12px]">lock</span> Safe &amp; Verified
+              </span>
+            </div>
+          </div>
+
+          {% if listing.itinerary_or_details %}
+          <div class="p-4 bg-surface-container-lowest border-t border-surface-container-high/60 text-xs text-on-surface-variant leading-relaxed">
+            <strong>Journey &amp; Event Details:</strong> {{ listing.itinerary_or_details }}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- ===================================================================
+             INTERACTIVE SEATING BLUEPRINT CARD
+             =================================================================== -->
+        <div id="seat-blueprint" class="rounded-2xl bg-surface-container-lowest p-5 sm:p-7 shadow-sm flex flex-col gap-6 border border-surface-container-high/80">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span class="font-mono text-xs font-bold text-primary-container tracking-wider uppercase block">
+                Choose Your Seat
+              </span>
+              <h2 id="seat-selection-heading" class="font-headline text-xl sm:text-2xl font-black text-on-surface">
+                {% if selected_ticket and not selected_ticket.is_direct %}
+                Seating Layout &amp; Assigned Resale Seat
+                {% elif listing.category == 'sports' %}
+                Select Your Stadium Seat
+                {% elif listing.category == 'movie' %}
+                Select Your Cinema Seat
+                {% elif listing.category == 'concert' %}
+                Select Your Concert Seat
+                {% elif listing.category == 'flight' %}
+                Select Your Flight Seat
+                {% elif listing.category == 'train' %}
+                Select Your Berth or Seat
+                {% elif listing.category == 'festival' %}
+                Select Your Pass or Seat
+                {% else %}
+                Select Your Seat or Pass
+                {% endif %}
+              </h2>
+            </div>
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-container text-xs font-mono font-bold text-on-surface-variant">
+              <span class="material-symbols-outlined text-[16px]">touch_app</span>
+              Click any seat to select
+            </div>
+          </div>
+
+          <!-- Seating Legend -->
+          <div class="seat-legend flex flex-wrap items-center gap-4 text-xs font-mono p-3 rounded-xl bg-surface-container-low border border-surface-container-high/60">
+            <div class="legend-item flex items-center gap-2">
+              <span class="legend-swatch available"></span>
+              <span class="text-on-surface">Available</span>
+            </div>
+            <div class="legend-item flex items-center gap-2 text-primary-container font-bold">
+              <span class="legend-swatch resale"></span>
+              <span>Verified Resale (Fixed Seat)</span>
+            </div>
+            <div class="legend-item flex items-center gap-2 text-on-surface font-bold">
+              <span class="legend-swatch selected"></span>
+              <span>Selected</span>
+            </div>
+            <div class="legend-item flex items-center gap-2 text-on-surface-variant">
+              <span class="legend-swatch unavailable"></span>
+              <span>Unavailable</span>
+            </div>
+          </div>
+
+          <!-- Train Direction / Orientation Kinetic Indicator -->
+          <div class="cinema-screen-container w-full flex items-center justify-center">
+            <div class="w-full py-2 px-4 rounded-xl bg-inverse-surface text-inverse-on-surface font-mono text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm">
+              {% if listing.category == 'sports' %}
+                <span class="material-symbols-outlined text-primary-container text-[16px]">sports_cricket</span>
+                <span class="screen-label label-sports">PITCH / PLAYING FIELD</span>
+                <span class="material-symbols-outlined text-primary-container text-[16px]">sports_cricket</span>
+              {% elif listing.category == 'movie' %}
+                <span class="material-symbols-outlined text-primary-container text-[16px]">movie</span>
+                <span class="screen-label label-movie">CINEMA SCREEN</span>
+                <span class="material-symbols-outlined text-primary-container text-[16px]">movie</span>
+              {% elif listing.category == 'concert' %}
+                <span class="material-symbols-outlined text-primary-container text-[16px]">mic</span>
+                <span class="screen-label label-concert">MAIN STAGE</span>
+                <span class="material-symbols-outlined text-primary-container text-[16px]">mic</span>
+              {% elif listing.category == 'train' %}
+                <span class="material-symbols-outlined text-primary-container text-[16px] animate-pulse">keyboard_double_arrow_up</span>
+                <span class="screen-label label-train">DIRECTION OF TRAIN • ENGINE AT FRONT</span>
+                <span class="material-symbols-outlined text-primary-container text-[16px] animate-pulse">keyboard_double_arrow_up</span>
+              {% elif listing.category == 'flight' %}
+                <span class="material-symbols-outlined text-primary-container text-[16px]">flight</span>
+                <span class="screen-label label-flight">CABIN FRONT • COCKPIT</span>
+                <span class="material-symbols-outlined text-primary-container text-[16px]">flight</span>
+              {% else %}
+                <span class="material-symbols-outlined text-primary-container text-[16px]">front_hand</span>
+                <span class="screen-label">STAGE / FRONT</span>
+                <span class="material-symbols-outlined text-primary-container text-[16px]">front_hand</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Coach Carriage Blueprint Schematic Grid -->
+          {% if has_grid %}
+          <div class="cinema-container p-6 rounded-2xl bg-surface-container-low flex flex-col items-center gap-5 shadow-inner border border-surface-container-high/60 overflow-x-auto">
+            <!-- Blueprint Cabin Boundary Frame -->
+            <div class="seating-grid w-full max-w-lg p-5 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-3.5 border border-surface-container-high/60" role="grid">
+              {% for row in grid_rows %}
+              <div class="seat-row flex items-center justify-center gap-3" role="row">
+                <div class="row-label" aria-label="Row {{ row.row_label }}">ROW {{ row.row_label }}</div>
+                <div class="row-seats flex items-center gap-2 flex-wrap justify-center">
+                  {% for seat in row.seats %}
+                    {% if seat.is_available %}
+                      <button type="button"
+                        class="seat-btn seat-available {% if not seat.is_direct %}seat-resale bg-amber-50/80 text-amber-900 border border-brand-amber/60{% else %}bg-surface-container-low text-on-surface hover:bg-surface-container border border-surface-container-high{% endif %} {% if seat.is_selected %}seat-selected bg-primary-container text-white ring-2 ring-primary-container/40 scale-105{% endif %} h-12 min-w-[2.75rem] px-2 rounded-xl font-mono text-xs font-bold flex flex-col items-center justify-center transition-all cursor-pointer shadow-xs hover:scale-105"
+                        data-id="{{ seat.id }}"
+                        data-seat="{{ seat.seat_or_coach }}"
+                        data-price="{{ seat.price }}"
+                        data-type="{{ seat.badge_text }}"
+                        data-status="{% if not seat.is_direct %}resale{% else %}direct{% endif %}"
+                        data-is-direct="{% if seat.is_direct %}true{% else %}false{% endif %}"
+                        data-seller="{{ seat.seller_username|default:'' }}"
+                        data-face="{{ seat.face_value|default:seat.price }}"
+                        data-fee="{{ seat.service_fee|default:'0.00' }}"
+                        data-ref="{{ seat.ticket_ref }}"
+                        data-is-self="{% if user.is_authenticated and seat.seller_username and user.username == seat.seller_username %}true{% else %}false{% endif %}"
+                        onclick="selectSeat('{{ seat.id }}', '{{ seat.seat_or_coach|escapejs }}', '{% if seat.is_direct %}direct{% else %}resale{% endif %}', '{{ seat.price }}', '{{ seat.seller_username|default:'' }}', '{{ seat.face_value|default:seat.price }}', '{{ seat.service_fee|default:'0.00' }}', '{{ seat.ticket_ref }}')"
+                        aria-label="{{ seat.seat_or_coach }} — ₹{{ seat.price }}{% if not seat.is_direct %} (Resale Seat){% endif %}"
+                        title="{{ seat.seat_or_coach }} • ₹{{ seat.price }}{% if not seat.is_direct %} [Verified Resale by @{{ seat.seller_username }}]{% endif %}">
+                        <span>{{ seat.seat_number }}</span>
+                        <span class="text-[8px] uppercase tracking-wider font-extrabold {% if not seat.is_direct %}text-brand-amber{% else %}text-emerald-700{% endif %}">
+                          {% if not seat.is_direct %}RESALE{% else %}AVAIL{% endif %}
+                        </span>
+                      </button>
+                    {% else %}
+                      <button type="button"
+                        class="seat-btn seat-unavailable h-12 min-w-[2.75rem] px-2 rounded-xl bg-surface-container-highest text-on-surface-variant/40 font-mono text-xs font-bold flex flex-col items-center justify-center cursor-not-allowed opacity-60"
+                        disabled aria-disabled="true"
+                        aria-label="{{ seat.seat_or_coach }} (Unavailable)"
+                        title="{{ seat.seat_or_coach }} (Unavailable / {{ seat.status|title }})">
+                        <span>{{ seat.seat_number }}</span>
+                        <span class="text-[8px] uppercase font-bold">CNF</span>
+                      </button>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+
+            <!-- Coach Amenities Strip -->
+            <div class="flex flex-wrap items-center justify-center gap-6 text-xs font-mono text-on-surface-variant pt-2">
+              <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px] text-primary">power</span> Charging Points</span>
+              <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px] text-primary">wifi</span> Free Wi-Fi</span>
+              <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px] text-primary">light</span> Reading Lights</span>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Other Available Passes & Assigned Seats -->
+          {% if has_other_tickets %}
+          <div class="other-tickets-section flex flex-col gap-3">
+            <h4 class="text-sm font-bold text-on-surface font-headline">
+              Available Passes &amp; Assigned Seats
+            </h4>
+            <div class="other-tickets-list grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {% for t in other_tickets %}
+              <div class="other-ticket-card p-3.5 rounded-xl bg-surface-container-low border {% if t.is_selected %}border-primary-container ring-2 ring-primary-container/30 selected{% else %}border-surface-container-high hover:border-primary-container/50{% endif %} cursor-pointer transition-all shadow-xs flex items-center justify-between"
+                data-id="{{ t.id }}" data-seat="{{ t.seat_or_coach }}" data-price="{{ t.price }}"
+                data-type="{{ t.badge_text }}" data-is-direct="{% if t.is_direct %}true{% else %}false{% endif %}"
+                data-seller="{{ t.seller_username|default:'' }}"
+                data-face="{{ t.face_value|default:t.price }}" data-fee="{{ t.service_fee|default:'0.00' }}"
+                data-ref="{{ t.ticket_ref }}"
+                data-is-self="{% if user.is_authenticated and t.seller_username and user.username == t.seller_username %}true{% else %}false{% endif %}"
+                onclick="selectSeat('{{ t.id }}', '{{ t.seat_or_coach|escapejs }}', '{% if t.is_direct %}direct{% else %}resale{% endif %}', '{{ t.price }}', '{{ t.seller_username|default:'' }}', '{{ t.face_value|default:t.price }}', '{{ t.service_fee|default:'0.00' }}', '{{ t.ticket_ref }}')"
+                tabindex="0" role="button">
+                <div>
+                  <div class="font-bold text-xs text-on-surface">{{ t.seat_or_coach }}</div>
+                  <div class="flex items-center gap-1.5 mt-0.5 font-mono">
+                    {% if t.is_direct %}
+                      <span class="text-[9px] bg-blue-50 text-blue-700 px-1.5 py-0.2 rounded font-bold border border-blue-200">Direct Pass</span>
+                    {% else %}
+                      <span class="text-[9px] bg-emerald-50 text-emerald-800 px-1.5 py-0.2 rounded font-bold border border-emerald-200">Verified Resale</span>
+                    {% endif %}
+                    <span class="text-[10px] text-on-surface-variant font-mono">Ref: {{ t.ticket_ref }}</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-mono text-sm font-bold text-on-surface">₹{{ t.price }}</div>
+                  <span class="text-[11px] text-primary-container font-bold">{% if t.is_selected %}&#10003; Selected{% else %}Select &rarr;{% endif %}</span>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Sold Out State -->
+          {% if not is_available %}
+          <div class="state-box p-6 text-center bg-surface-container-low border border-surface-container-high rounded-2xl flex flex-col items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-3xl text-on-surface-variant">confirmation_number</span>
+            <h4 class="text-sm font-bold text-on-surface m-0 font-headline">All Seats Currently Reserved or Sold Out</h4>
+            <p class="text-xs text-on-surface-variant m-0 font-mono">No tickets are available for direct booking or resale right now. Please check back later.</p>
+          </div>
+          {% endif %}
+
+          <!-- Dynamic Active Seat Callout Panel -->
+          <div class="p-4 rounded-xl bg-primary-container/10 border border-primary-container/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4" id="selection-summary-card">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-xl bg-primary-container text-white flex items-center justify-center shadow-xs shrink-0">
+                <span class="material-symbols-outlined text-[20px]">airline_seat_recline_extra</span>
+              </div>
+              <div class="min-w-0">
+                <div class="font-headline font-black text-sm text-on-surface flex items-center gap-2 truncate">
+                  <span id="active-seat-label">
+                    {% if selected_ticket %}
+                      Seat {{ selected_ticket.seat_or_coach }} &bull; {% if not selected_ticket.is_direct %}Resale Ticket{% else %}Direct Pass{% endif %}
+                    {% else %}
+                      Please select an available seat above
+                    {% endif %}
+                  </span>
+                </div>
+                <div class="text-xs text-on-surface-variant font-mono truncate" id="active-seat-details">
+                  {% if selected_ticket %}
+                    {{ listing.event_specs.venue_access|default:'Executive Chair Car' }} &bull; Coach C2 &bull; Facing Forward
+                  {% else %}
+                    Click any highlighted seat on the carriage blueprint to reserve
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 self-end sm:self-auto shrink-0">
+              <div class="text-right">
+                <div class="font-mono text-[10px] text-on-surface-variant uppercase font-bold">Total Fare</div>
+                <div class="font-headline font-black text-lg text-primary-container" id="active-seat-price">
+                  {% if selected_ticket %}₹{{ selected_ticket.price }}{% else %}—{% endif %}
+                </div>
+              </div>
+              <a href="#featured-resale-card" class="px-3.5 py-2 rounded-lg bg-inverse-surface text-inverse-on-surface hover:bg-black font-mono text-xs font-bold uppercase tracking-wider transition-colors no-underline">
+                View Ticket Stub
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<!-- =========================================================================
+     PERSISTENT FLOATING BOTTOM CHECKOUT DOCK
+     ========================================================================= -->
+<aside class="fixed bottom-0 left-0 right-0 z-40 bg-surface-container-lowest/95 backdrop-blur-xl border-t border-surface-container-high shadow-[0_-8px_30px_rgba(0,0,0,0.08)] py-3.5 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+
+    <!-- Dock Left: Selected Seat Metadata -->
+    <div class="flex items-center gap-3.5 w-full sm:w-auto min-w-0">
+      <div class="w-11 h-11 rounded-xl bg-primary-container text-white flex items-center justify-center shrink-0 shadow-sm">
+        <span class="material-symbols-outlined text-[24px]">airline_seat_recline_extra</span>
+      </div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="font-headline font-black text-sm text-on-surface truncate" id="dock-seat-tag">
+            {% if selected_ticket %}Seat {{ selected_ticket.seat_or_coach }}{% else %}Please select an available seat above{% endif %}
+          </span>
+          <span class="px-1.5 py-0.2 rounded {% if selected_ticket and not selected_ticket.is_direct %}bg-amber-100 text-amber-900 border border-brand-amber/40{% else %}bg-primary-container/15 text-primary-container border border-primary-container/30{% endif %} font-mono text-[9px] font-bold uppercase" id="dock-seat-type">
+            {% if selected_ticket and not selected_ticket.is_direct %}Verified Resale (Fixed Seat){% elif selected_ticket %}Direct Pass{% else %}Selection Needed{% endif %}
+          </span>
+        </div>
+        <div class="text-xs text-on-surface-variant font-mono truncate flex items-center gap-1.5" id="dock-seat-details">
+          {% if selected_ticket %}
+            {% if not selected_ticket.is_direct %}
+              <span>Sold by @{{ selected_ticket.seller_username }}</span>
+              <span>&bull;</span>
+              <span class="text-emerald-700 font-bold flex items-center gap-0.5">
+                <span class="material-symbols-outlined text-[13px]">verified</span> Verified Seller
+              </span>
+            {% else %}
+              <span>Direct Official Ticket &bull; Instant Issue</span>
+            {% endif %}
+          {% else %}
+            <span>Please select an available seat above to continue</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Dock Right: Price Calculation & Primary CTA -->
+    <div class="flex items-center justify-between sm:justify-end gap-5 w-full sm:w-auto">
+      <div class="text-left sm:text-right">
+        <div class="text-[10px] font-mono text-on-surface-variant uppercase font-bold tracking-wider">
+          Total Fare
+        </div>
+        <div class="flex items-baseline gap-1.5">
+          <span class="font-headline text-2xl font-black text-on-surface" id="dock-fare">
+            {% if selected_ticket %}₹{{ selected_ticket.price }}{% else %}—{% endif %}
+          </span>
+          <span class="text-[10px] font-mono text-emerald-700 font-bold flex items-center">
+            <span class="material-symbols-outlined text-[12px]">lock_reset</span> 100% Refund Protection
+          </span>
+        </div>
+      </div>
+
+      {% if is_available %}
+        <div id="owner-notice-box" style="display: {% if is_owner %}block{% else %}none{% endif %}; text-align: right;">
+          <a href="{% url 'my-listings' %}" class="px-4 py-2.5 rounded-xl border border-surface-container-high font-mono font-bold text-xs text-on-surface hover:bg-surface-container no-underline">
+            Manage in My Listings
+          </a>
+        </div>
+
+        {% if not user.is_authenticated %}
+          <a id="login-checkout-btn"
+            href="{% if selected_ticket %}{% url 'login' %}?next={% url 'checkout' selected_ticket.id %}{% else %}{% url 'login' %}{% endif %}"
+            class="px-6 py-3.5 rounded-xl bg-primary-container hover:bg-primary text-white font-headline text-sm font-black uppercase tracking-wider transition-all shadow-[0_4px_16px_rgba(255,102,0,0.3)] active:scale-95 flex items-center gap-2 shrink-0 no-underline {% if not selected_ticket %}checkout-btn-disabled pointer-events-none opacity-50{% endif %}">
+            <span class="material-symbols-outlined text-[18px]">login</span>
+            <span id="login-btn-text">{% if selected_ticket and not selected_ticket.is_direct %}Log In to Buy Resale Seat &rarr;{% else %}Log In to Book &rarr;{% endif %}</span>
+          </a>
+        {% else %}
+          <a id="checkout-btn"
+            href="{% if selected_ticket %}{% url 'checkout' selected_ticket.id %}{% else %}#{% endif %}"
+            class="px-6 py-3.5 rounded-xl bg-primary-container hover:bg-primary text-white font-headline text-sm font-black uppercase tracking-wider transition-all shadow-[0_4px_16px_rgba(255,102,0,0.3)] active:scale-95 flex items-center gap-2 shrink-0 no-underline {% if not selected_ticket or is_owner %}checkout-btn-disabled pointer-events-none opacity-50{% endif %}"
+            style="{% if is_owner %}display: none;{% endif %}">
+            <span class="material-symbols-outlined text-[18px]">{% if user.is_identity_verified %}lock{% else %}verified_user{% endif %}</span>
+            <span id="checkout-btn-text">
+              {% if not user.is_identity_verified and selected_ticket %}
+                Verify with DigiLocker to Purchase &rarr;
+              {% elif selected_ticket and not selected_ticket.is_direct %}
+                Proceed to Checkout (Seat {{ selected_ticket.seat_or_coach }})
+              {% elif selected_ticket %}
+                Proceed to Checkout (Seat {{ selected_ticket.seat_or_coach }})
+              {% else %}
+                Please select an available seat above
+              {% endif %}
+            </span>
+          </a>
+        {% endif %}
+      {% else %}
+        <button disabled class="px-6 py-3.5 rounded-xl bg-surface-container-highest text-on-surface-variant font-headline text-sm font-bold uppercase tracking-wider cursor-not-allowed">
+          {% if is_concluded %}Event Ended{% else %}Sold Out{% endif %}
+        </button>
+      {% endif %}
+    </div>
+
+  </div>
+</aside>
+
+<!-- =========================================================================
+     MICRO-INTERACTIONS & DYNAMIC SEAT SELECTION SCRIPT
+     ========================================================================= -->
+<script>
+  let currentTicketId = '{% if selected_ticket %}{{ selected_ticket.id }}{% else %}{% endif %}';
+  let currentSeat = '{% if selected_ticket %}{{ selected_ticket.seat_or_coach|escapejs }}{% else %}{% endif %}';
+  let currentIsDirect = {% if selected_ticket and selected_ticket.is_direct %}true{% else %}false{% endif %};
+  let currentPrice = '{% if selected_ticket %}{{ selected_ticket.price }}{% else %}{% endif %}';
+  let currentSeller = '{% if selected_ticket and selected_ticket.seller_username %}{{ selected_ticket.seller_username|escapejs }}{% else %}{% endif %}';
+  let currentLoggedInUser = '{{ user.username|escapejs }}';
+  let isAuthenticated = {% if user.is_authenticated %}true{% else %}false{% endif %};
+  let isUserVerified = {% if user.is_authenticated and user.is_identity_verified %}true{% else %}false{% endif %};
+
+  function selectSeat(ticketId, seatName, itemType, price, seller, faceValue, fee, ref) {
+    currentTicketId = ticketId;
+    currentSeat = seatName;
+    currentIsDirect = (itemType === 'direct');
+    currentPrice = price;
+    currentSeller = seller || '';
+    const isSelf = (isAuthenticated && currentSeller && currentLoggedInUser === currentSeller);
+
+    // 1. Update Left Boarding Pass Stub
+    const stubSeatNumber = document.getElementById('stub-seat-number');
+    if (stubSeatNumber) stubSeatNumber.textContent = seatName;
+
+    const stubSeatClass = document.getElementById('stub-seat-class');
+    if (stubSeatClass) {
+      stubSeatClass.textContent = currentIsDirect ? 'Official Direct Pass' : 'Verified Resale (Fixed Seat)';
+    }
+
+    const stubPassBadge = document.getElementById('stub-pass-badge');
+    if (stubPassBadge) {
+      stubPassBadge.textContent = currentIsDirect ? 'Guaranteed Seat • Single Ticket' : 'Verified Resale (Fixed Seat)';
+    }
+
+    const resaleBanner = document.getElementById('resale-fixed-banner');
+    if (resaleBanner) {
+      resaleBanner.style.display = currentIsDirect ? 'none' : 'flex';
+    }
+
+    const stubMathFace = document.getElementById('stub-math-face');
+    if (stubMathFace) stubMathFace.textContent = '₹' + (faceValue || price);
+
+    const stubMathTotal = document.getElementById('stub-math-total');
+    if (stubMathTotal) stubMathTotal.textContent = '₹' + price;
+
+    const stubBarcodeRef = document.getElementById('stub-barcode-ref');
+    if (stubBarcodeRef) stubBarcodeRef.textContent = ref || ticketId;
+
+    const stubRefTag = document.getElementById('stub-ref-tag');
+    if (stubRefTag) stubRefTag.textContent = ref || ticketId;
+
+    // Seller Card
+    const sellerCardTitle = document.getElementById('seller-card-title');
+    const sellerDisplayName = document.getElementById('seller-display-name');
+    const sellerAvatar = document.getElementById('seller-avatar');
+    if (sellerCardTitle && sellerDisplayName && sellerAvatar) {
+      if (!currentIsDirect && seller) {
+        sellerCardTitle.textContent = 'Verified Seller';
+        sellerDisplayName.textContent = '@' + seller;
+        sellerAvatar.textContent = seller.slice(0, 2).toUpperCase();
+      } else {
+        sellerCardTitle.textContent = 'Verified Partner';
+        sellerDisplayName.textContent = '{{ listing.provider_name|escapejs }}';
+        sellerAvatar.textContent = '{{ listing.provider_name|slice:":2"|upper|escapejs }}';
+      }
+    }
+
+    // 2. Update Blueprint Callout Panel
+    const activeSeatLabel = document.getElementById('active-seat-label');
+    if (activeSeatLabel) {
+      activeSeatLabel.textContent = `Seat ${seatName} • ${currentIsDirect ? 'Direct Booking' : 'Resale Ticket'}`;
+    }
+    const activeSeatPrice = document.getElementById('active-seat-price');
+    if (activeSeatPrice) {
+      activeSeatPrice.textContent = '₹' + price;
+    }
+
+    // 3. Update Bottom Dock
+    const dockSeatTag = document.getElementById('dock-seat-tag');
+    if (dockSeatTag) dockSeatTag.textContent = 'Seat ' + seatName;
+
+    const dockSeatType = document.getElementById('dock-seat-type');
+    if (dockSeatType) {
+      dockSeatType.textContent = currentIsDirect ? 'Direct Pass' : 'Verified Resale (Fixed Seat)';
+      dockSeatType.className = 'px-1.5 py-0.2 rounded font-mono text-[9px] font-bold uppercase ' +
+        (currentIsDirect ? 'bg-primary-container/15 text-primary-container border border-primary-container/30' : 'bg-amber-100 text-amber-900 border border-brand-amber/40');
+    }
+
+    const dockSeatDetails = document.getElementById('dock-seat-details');
+    if (dockSeatDetails) {
+      if (currentIsDirect) {
+        dockSeatDetails.innerHTML = '<span>Direct Official Ticket &bull; Instant Issue</span>';
+      } else {
+        dockSeatDetails.innerHTML = '<span>Sold by @' + seller + '</span><span>&bull;</span><span class="text-emerald-700 font-bold flex items-center gap-0.5"><span class="material-symbols-outlined text-[13px]">verified</span> Verified Seller</span>';
+      }
+    }
+
+    const dockFare = document.getElementById('dock-fare');
+    if (dockFare) dockFare.textContent = '₹' + price;
+
+    // 4. Update Checkout URLs & Buttons
+    const checkoutUrl = '/checkout/' + ticketId + '/';
+    const loginUrl = '{% url "login" %}?next=' + encodeURIComponent(checkoutUrl);
+
+    const cardCheckoutBtn = document.getElementById('card-checkout-btn');
+    const cardCheckoutText = document.getElementById('card-checkout-text');
+    const checkoutBtn = document.getElementById('checkout-btn');
+    const checkoutBtnText = document.getElementById('checkout-btn-text');
+    const loginBtn = document.getElementById('login-checkout-btn');
+    const loginBtnText = document.getElementById('login-btn-text');
+    const ownerNoticeBox = document.getElementById('owner-notice-box');
+
+    if (ownerNoticeBox) {
+      ownerNoticeBox.style.display = isSelf ? 'block' : 'none';
+    }
+
+    // Card checkout btn in left ticket stub
+    if (cardCheckoutBtn) {
+      cardCheckoutBtn.href = isAuthenticated ? checkoutUrl : loginUrl;
+      if (isSelf) {
+        cardCheckoutBtn.classList.add('pointer-events-none', 'opacity-50');
+      } else {
+        cardCheckoutBtn.classList.remove('pointer-events-none', 'opacity-50');
+      }
+    }
+    if (cardCheckoutText) {
+      if (!isAuthenticated) {
+        cardCheckoutText.textContent = 'Log In to Buy \u2192';
+      } else if (!isUserVerified) {
+        cardCheckoutText.textContent = 'Verify Identity to Buy \u2192';
+      } else {
+        cardCheckoutText.textContent = 'Continue with Seat ' + seatName + ' \u2192';
+      }
+    }
+
+    // Floating dock checkout button
+    if (checkoutBtn) {
+      checkoutBtn.href = checkoutUrl;
+      if (isSelf) {
+        checkoutBtn.style.display = 'none';
+        checkoutBtn.classList.add('checkout-btn-disabled');
+      } else {
+        checkoutBtn.style.display = 'inline-flex';
+        checkoutBtn.classList.remove('checkout-btn-disabled');
+        checkoutBtn.style.pointerEvents = 'auto';
+        checkoutBtn.style.opacity = '1';
+      }
+    }
+    if (checkoutBtnText) {
+      if (isAuthenticated && !isUserVerified) {
+        checkoutBtnText.textContent = 'Verify with DigiLocker to Purchase \u2192';
+      } else {
+        checkoutBtnText.textContent = 'Proceed to Checkout (Seat ' + seatName + ')';
+      }
+    }
+
+    if (loginBtn) {
+      loginBtn.href = loginUrl;
+      loginBtn.classList.remove('checkout-btn-disabled');
+      loginBtn.style.pointerEvents = 'auto';
+      loginBtn.style.opacity = '1';
+    }
+    if (loginBtnText) {
+      loginBtnText.textContent = currentIsDirect ? 'Log In to Book →' : 'Log In to Buy Resale Seat →';
+    }
+
+    // 5. Update Seating Grid buttons
+    document.querySelectorAll('.seat-btn.seat-available').forEach(btn => {
+      const bId = btn.getAttribute('data-id');
+      if (bId === ticketId) {
+        btn.classList.add('seat-selected', 'bg-primary-container', 'text-white', 'scale-105', 'ring-2', 'ring-primary-container/40');
+        btn.classList.remove('bg-surface-container-low', 'text-on-surface', 'bg-amber-50/80', 'text-amber-900');
+        const subTag = btn.querySelector('span:last-child');
+        if (subTag) {
+          subTag.classList.remove('text-brand-amber', 'text-emerald-700');
+          subTag.classList.add('text-amber-200');
+        }
+      } else {
+        btn.classList.remove('seat-selected', 'bg-primary-container', 'text-white', 'scale-105', 'ring-2', 'ring-primary-container/40');
+        const isDir = btn.getAttribute('data-is-direct') === 'true';
+        if (isDir) {
+          btn.classList.add('bg-surface-container-low', 'text-on-surface');
+          const subTag = btn.querySelector('span:last-child');
+          if (subTag) {
+            subTag.classList.remove('text-amber-200', 'text-brand-amber');
+            subTag.classList.add('text-emerald-700');
+          }
+        } else {
+          btn.classList.add('bg-amber-50/80', 'text-amber-900');
+          const subTag = btn.querySelector('span:last-child');
+          if (subTag) {
+            subTag.classList.remove('text-amber-200', 'text-emerald-700');
+            subTag.classList.add('text-brand-amber');
+          }
+        }
+      }
+    });
+
+    // 6. Update Resale & Other ticket cards
+    document.querySelectorAll('.resale-card, .other-ticket-card').forEach(card => {
+      const cId = card.getAttribute('data-id');
+      if (cId === ticketId) {
+        card.classList.add('border-primary-container', 'ring-2', 'ring-primary-container/30', 'selected');
+        card.classList.remove('border-surface-container-high');
+        const selText = card.querySelector('.text-primary-container');
+        if (selText) selText.innerHTML = '&#10003; Selected';
+      } else {
+        card.classList.remove('border-primary-container', 'ring-2', 'ring-primary-container/30', 'selected');
+        card.classList.add('border-surface-container-high');
+        const selText = card.querySelector('.text-primary-container');
+        if (selText) selText.innerHTML = 'Select Seat &rarr;';
+      }
+    });
+
+    // 7. Update URL query without full page reload
+    if (window.history && window.history.replaceState) {
+      const newUrl = window.location.pathname + '?seat=' + encodeURIComponent(ticketId);
+      window.history.replaceState({ seat: ticketId }, '', newUrl);
+    }
+  }
+</script>
+{% endblock %}

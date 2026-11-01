@@ -1,0 +1,579 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verify Your Identity • lastchance{% endblock %}
+
+{% block content %}
+<div class="w-full px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+
+  <!-- Kinetic Ambient Backings -->
+  <div class="relative w-full">
+    <div
+      class="absolute -top-10 left-1/4 w-80 h-80 bg-primary-container/5 rounded-full blur-3xl pointer-events-none -z-10">
+    </div>
+    <div
+      class="absolute top-1/3 right-12 w-64 h-64 bg-tertiary-container/5 rounded-full blur-3xl pointer-events-none -z-10">
+    </div>
+
+    <!-- Unified Flight-Status Terminal HUD Banner -->
+    <div
+      class="relative bg-surface-container-lowest rounded-3xl p-6 sm:p-7 shadow-xs border border-surface-container-high/70 mb-8 overflow-hidden w-full">
+      <div
+        class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary-container to-transparent">
+      </div>
+
+      <!-- Header Title & Protocol Strip -->
+      <div
+        class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-surface-container-high/60">
+        <div class="flex flex-col gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <span
+              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-mono text-xs font-semibold uppercase tracking-wider border border-surface-container-highest/60">
+              <span
+                class="w-2 h-2 rounded-full {% if is_verified %}bg-emerald-600 animate-pulse{% else %}bg-emerald-600{% endif %}"></span>
+              {% if is_verified %}OFFICIAL GOVERNMENT VERIFICATION • ACTIVE &amp; CONFIRMED{% else %}OFFICIAL GOVERNMENT
+              VERIFICATION • 100% PRIVATE &amp; SECURE{% endif %}
+            </span>
+          </div>
+          <div>
+            <h1
+              class="font-display-hero text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-on-surface">
+              {% if is_verified %}Identity <span class="text-emerald-600">Verified</span>{% else %}Verify Your <span
+                class="text-primary-container">Identity</span>{% endif %}
+            </h1>
+            <p class="font-body-lg text-sm sm:text-base text-secondary mt-1 max-w-3xl">
+              {% if is_verified %}
+              Your legal identity is authenticated via Setu DigiLocker Aadhaar eKYC. Full peer-to-peer resale, booking,
+              and official gate pass transfer privileges are active.
+              {% else %}
+              Confirm your real identity through DigiLocker to buy, sell, and transfer tickets safely. Keeps tickets at
+              fair prices and prevents fake buyers or scammers.
+              {% endif %}
+            </p>
+          </div>
+        </div>
+
+        <!-- Dynamic KYC Progress Indicator HUD Module -->
+        <div
+          class="flex items-center gap-4 bg-surface-container-low/80 border border-surface-container-high px-4 py-3 rounded-2xl shrink-0 self-start lg:self-auto">
+          <div
+            class="w-11 h-11 rounded-xl bg-surface-container-lowest {% if is_verified %}text-emerald-600{% else %}text-primary-container{% endif %} flex items-center justify-center shadow-xs">
+            <span class="material-symbols-outlined text-[24px]">{% if is_verified %}verified{% else %}verified_user{% endif %}</span>
+          </div>
+          <div class="flex flex-col pr-2">
+            <span class="text-[11px] font-mono uppercase tracking-wider text-secondary font-bold">{% if is_verified %}DigiLocker Status{% else %}Quick Identity Check{% endif %}</span>
+            <span class="text-sm font-display font-bold text-on-surface flex items-center gap-1">
+              {% if is_verified %}KYC Confirmed &bull; Active{% else %}Step 1 of 2: Aadhaar Consent{% endif %}
+            </span>
+          </div>
+          <div class="h-8 w-[1px] bg-surface-container-high"></div>
+          <div class="text-right pl-1">
+            <span
+              class="text-xs font-mono font-bold {% if is_verified %}text-emerald-700{% else %}text-primary-container{% endif %}">
+              {% if is_verified %}Secured{% else %}~1 minute{% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contextual Alert / Action Required Bar Inside Terminal HUD -->
+      <div class="pt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-start sm:items-center gap-3.5">
+          <div
+            class="w-10 h-10 rounded-xl {% if is_verified %}bg-emerald-100 text-emerald-800{% else %}bg-primary-fixed text-on-primary-fixed{% endif %} flex items-center justify-center shrink-0 ring-1 ring-primary-container/20">
+            <span class="material-symbols-outlined text-[22px]">{% if is_verified %}shield{% else %}info{% endif %}</span>
+          </div>
+          <div class="flex flex-col">
+            <span
+              class="text-xs font-mono font-bold uppercase tracking-wider {% if is_verified %}text-emerald-700{% else %}text-primary{% endif %}">
+              {% if is_verified %}Verified Standing{% else %}Why do this?{% endif %}
+            </span>
+            <p class="text-sm font-medium text-on-surface leading-snug">
+              {% if is_verified %}
+              Your verified legal name (<strong class="text-on-surface font-bold">{{ verified_legal_name }}</strong>) is
+              stamped onto all issued digital passes and tickets for turnstile verification.
+              {% else %}
+              Verification is required to sell tickets, transfer tickets to new buyers, and enter venues smoothly.
+              {% endif %}
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+          <span
+            class="text-xs font-mono font-bold text-secondary bg-surface-container px-2.5 py-1 rounded-lg border border-surface-container-high">
+            {% if is_verified %}100% Privacy Protected{% else %}Takes about 30 seconds{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Return-to Action Notice if navigating from a restricted action -->
+    {% if return_to and not is_verified %}
+    <div
+      class="bg-primary-fixed/20 border border-primary-container/30 rounded-2xl p-4 sm:p-5 mb-8 flex items-center gap-3.5 shadow-xs w-full">
+      <div class="w-10 h-10 rounded-xl bg-primary-container text-white flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-[22px]">lock</span>
+      </div>
+      <div class="text-xs sm:text-sm text-on-surface font-medium">
+        <strong class="font-bold text-primary-container">Action Requires Verification:</strong> You must complete Setu
+        DigiLocker identity verification before you can proceed with your {% if action_param == 'sell' %}ticket resale
+        listing{% elif action_param == 'direct_booking' %}direct booking checkout{% elif action_param ==
+        'resale_purchase' %}resale checkout{% else %}transaction{% endif %}.
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Middle Section: Kinetic Two-Column Terminal Division (Full screen width) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-14 w-full">
+
+      <!-- LEFT COLUMN: Verification Form or Verified Details Card (6 cols) -->
+      <div class="lg:col-span-6 flex flex-col gap-6 w-full">
+
+        {% if is_verified %}
+        <!-- Verified Confirmation Console -->
+        <div
+          class="relative bg-surface-container-lowest rounded-3xl p-6 sm:p-8 shadow-xs border border-surface-container-high/80 overflow-hidden w-full">
+          <div class="absolute top-0 left-0 right-0 h-[2px] bg-emerald-600"></div>
+
+          <div class="flex items-center justify-between pb-6 border-b border-surface-container-high/50">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200">
+                <span class="material-symbols-outlined text-[22px]">verified</span>
+              </div>
+              <div>
+                <h2 class="font-display text-xl font-black text-on-surface tracking-tight">Identity Confirmed</h2>
+                <span class="text-xs font-mono text-secondary uppercase tracking-wider">Setu DigiLocker Aadhaar
+                  eKYC</span>
+              </div>
+            </div>
+            <span
+              class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 font-mono text-xs font-bold border border-emerald-200">
+              <span class="material-symbols-outlined text-[15px] text-emerald-600">check_circle</span>Active
+            </span>
+          </div>
+
+          <div class="pt-6 flex flex-col gap-5">
+            <div
+              class="bg-surface-container-low/70 border border-surface-container-high/80 p-5 rounded-2xl flex flex-col gap-3 font-mono text-xs">
+              <div class="flex justify-between items-center pb-2 border-b border-surface-container-high/60">
+                <span class="text-secondary font-sans">Verified Legal Name:</span>
+                <span class="text-on-surface font-display font-bold text-sm">{{ verified_legal_name }}</span>
+              </div>
+              <div class="flex justify-between items-center pb-2 border-b border-surface-container-high/60">
+                <span class="text-secondary font-sans">Verification Gateway:</span>
+                <span class="font-bold text-on-surface font-sans">Setu DigiLocker Aadhaar eKYC</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-secondary font-sans">Account Standing:</span>
+                <span
+                  class="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  Full Booking &amp; Resale Privileges
+                </span>
+              </div>
+            </div>
+
+            <p class="text-xs text-secondary leading-relaxed font-normal">
+              Your legal identity is permanently registered with lastchance. All digital gate passes, tickets, and
+              peer-to-peer transfers are issued directly in your verified name.
+            </p>
+
+            <div class="pt-3 border-t border-surface-container-high/60 flex flex-wrap items-center gap-3">
+              {% if return_to %}
+              <a href="{{ return_to }}"
+                class="flex-1 py-3 px-5 rounded-xl bg-primary-container text-white font-display text-xs uppercase tracking-wider font-bold shadow-sm hover:bg-primary transition-all text-center no-underline">
+                Continue to {% if action_param == 'sell' %}List Ticket{% else %}Checkout{% endif %} &rarr;
+              </a>
+              {% endif %}
+              <a href="{% url 'explore' %}"
+                class="py-3 px-5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-display text-xs uppercase tracking-wider font-bold transition-colors text-center border border-surface-container-high no-underline">
+                Explore Tickets
+              </a>
+              <a href="{% url 'sell-ticket' %}"
+                class="py-3 px-5 rounded-xl bg-surface-container hover:bg-surface-container-high text-primary-container font-display text-xs uppercase tracking-wider font-bold transition-colors text-center border border-surface-container-high no-underline">
+                Sell a Ticket
+              </a>
+              <a href="{% url 'my-listings' %}"
+                class="py-3 px-5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-display text-xs uppercase tracking-wider font-bold transition-colors text-center border border-surface-container-high no-underline">
+                My Listings
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {% else %}
+        <!-- Setu DigiLocker Verification Terminal & Input Form -->
+        <div
+          class="relative bg-surface-container-lowest rounded-3xl p-6 sm:p-8 shadow-xs border border-surface-container-high/80 overflow-hidden w-full">
+          <!-- 2px Perimeter Kinetic Accent Line -->
+          <div class="absolute top-0 left-0 right-0 h-[2px] bg-primary-container"></div>
+          <!-- Decorative Ticket Notch Accents -->
+          <div
+            class="absolute top-0 right-10 w-8 h-3 bg-surface rounded-b-full border-b border-x border-surface-container-high">
+          </div>
+
+          <div class="flex items-center justify-between pb-6 border-b border-surface-container-high/50">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-on-surface border border-surface-container-high">
+                <span class="material-symbols-outlined text-[22px]">badge</span>
+              </div>
+              <div>
+                <h2 class="font-display text-xl font-black text-on-surface tracking-tight">Verify with DigiLocker</h2>
+                <span class="text-xs font-mono text-secondary uppercase tracking-wider">Fast, government-approved ID
+                  check</span>
+              </div>
+            </div>
+            <span
+              class="hidden sm:inline-flex items-center gap-1 px-3 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-mono text-xs font-bold border border-surface-container-high">
+              <span class="material-symbols-outlined text-[15px] text-emerald-600">verified</span>Government Approved
+            </span>
+          </div>
+
+          <!-- Pending Session Box (if exists) -->
+          {% if latest_kyc and latest_kyc.status == 'INITIATED' and latest_kyc.digilocker_url %}
+          <div class="mt-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col gap-3">
+            <div class="flex items-center gap-2 text-brand-amber font-mono text-xs font-bold uppercase">
+              <span class="material-symbols-outlined text-[18px]">timelapse</span>
+              <span>Active DigiLocker Session In Progress</span>
+            </div>
+            <p class="text-xs text-secondary leading-relaxed font-normal">
+              A DigiLocker Aadhaar verification request has been initiated. Complete your authentication on the Setu
+              consent gateway.
+            </p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <a href="{{ latest_kyc.digilocker_url }}" target="_blank" rel="noreferrer"
+                class="py-2 px-3.5 rounded-lg bg-primary-container text-white text-xs font-display font-bold uppercase tracking-wider hover:bg-primary transition-all no-underline inline-flex items-center gap-1">
+                <span>Open DigiLocker Window</span>
+                <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+              </a>
+              <a href="{% url 'kyc-callback' %}?id={{ latest_kyc.setu_request_id }}{% if return_to %}&returnTo={{ return_to|urlencode }}{% endif %}"
+                class="py-2 px-3.5 rounded-lg bg-white border border-surface-container-high text-on-surface text-xs font-display font-bold uppercase tracking-wider hover:bg-surface-container-low transition-colors no-underline">
+                Check Verification Status
+              </a>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Form Flow -->
+          <form class="flex flex-col gap-6 pt-6" id="ekyc-form" method="POST" action="{% url 'verification' %}"
+            onsubmit="triggerDigiLocker(event);">
+            {% csrf_token %}
+
+            {% if return_to %}
+            <input type="hidden" name="returnTo" value="{{ return_to }}">
+            {% endif %}
+            {% if action_param %}
+            <input type="hidden" name="action" value="{{ action_param }}">
+            {% endif %}
+
+            <!-- Legal Name Input Field -->
+            <div class="flex flex-col gap-2">
+              <label
+                class="flex items-center justify-between text-xs font-mono font-bold uppercase tracking-wider text-on-surface"
+                for="legal-name">
+                <span>Your Full Name (Exactly as on your Govt ID)</span>
+                <span class="text-primary text-[11px] font-bold">Must Match Your ID</span>
+              </label>
+              <div class="relative flex items-center">
+                <span
+                  class="absolute left-4 text-secondary material-symbols-outlined text-[20px] pointer-events-none">person</span>
+                <input
+                  class="w-full pl-12 pr-10 py-3.5 bg-surface-container-low text-on-surface font-display font-bold text-base rounded-xl border border-surface-container-high focus:outline-none focus:bg-surface-container-lowest focus:border-primary-container transition-all"
+                  id="legal-name" name="legal_name" placeholder="e.g. Madhur Jain" required="" type="text"
+                  value="{% if user.verified_legal_name %}{{ user.verified_legal_name }}{% elif user.first_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username|title }}{% endif %}">
+                <span class="absolute right-4 text-tertiary material-symbols-outlined text-[18px]">verified</span>
+              </div>
+              <p class="text-xs text-secondary leading-relaxed mt-1 flex items-start gap-1.5">
+                <span class="material-symbols-outlined text-[15px] text-primary-container shrink-0 mt-0.5">info</span>
+                <span>This legal name will appear on your tickets and will be checked at entry gates. It cannot be
+                  edited after verification.</span>
+              </p>
+            </div>
+
+            <!-- Primary Action Button -->
+            <div class="flex flex-col sm:flex-row items-center gap-3 pt-2">
+              <button
+                class="w-full sm:flex-1 py-4 px-6 rounded-xl bg-primary-container text-white font-display text-base font-bold uppercase tracking-wider shadow-[0_2px_12px_rgba(255,102,0,0.2)] hover:bg-primary transition-all flex items-center justify-center gap-2 group cursor-pointer active:scale-[0.99]"
+                id="verify-btn" type="submit">
+                <span
+                  class="material-symbols-outlined text-[20px] transition-transform group-hover:scale-110">verified_user</span>
+                <span>Verify with DigiLocker</span>
+                <span
+                  class="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-1">arrow_forward</span>
+              </button>
+              <button
+                class="w-full sm:w-auto py-4 px-5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-display text-xs font-bold uppercase tracking-wider transition-colors shrink-0 border border-surface-container-high cursor-pointer"
+                onclick="simulateTogglePreview()" type="button">
+                Show How My Pass Looks
+              </button>
+            </div>
+
+            <!-- Disclaimer micro-copy -->
+            <div class="flex items-center justify-center gap-2 text-xs text-secondary font-mono pt-1">
+              <span class="material-symbols-outlined text-[14px]">sms</span>
+              <span>You will receive an OTP on your mobile number registered with Aadhaar.</span>
+            </div>
+          </form>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <!-- RIGHT COLUMN: Tactile Ticket Pass Hub & Integrity Console (6 cols) -->
+      <div class="lg:col-span-6 flex flex-col gap-6 w-full">
+
+        <!-- Tactile Physical Ticket Pass Credential Card -->
+        <div
+          class="relative bg-surface-container-lowest rounded-3xl p-6 sm:p-7 shadow-xs border border-surface-container-high/80 overflow-hidden transition-all duration-300 w-full"
+          id="verified-preview-card">
+          <div class="absolute top-0 left-0 right-0 h-[2px] bg-primary-container"></div>
+          <div class="flex items-center justify-between pb-4">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary-container text-[20px]">badge</span>
+              <span class="font-mono text-xs font-bold uppercase tracking-wider text-secondary">Your Ticket Badge
+                Preview</span>
+            </div>
+            <span
+              class="px-2.5 py-0.5 rounded-full bg-surface-container text-tertiary font-mono text-[10px] font-bold uppercase border border-surface-container-high">
+              How Buyers &amp; Venues See You
+            </span>
+          </div>
+
+          <!-- Perforated Ticket Style Credential Card -->
+          <div
+            class="bg-surface-container-low/90 rounded-2xl p-5 sm:p-6 relative overflow-hidden border border-surface-container-high w-full">
+            <!-- Background Decorative Ticket Watermark -->
+            <div
+              class="absolute -right-6 -bottom-6 text-surface-container-high font-mono text-8xl font-black select-none pointer-events-none opacity-40">
+              KYC
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-5 relative z-10">
+              <div class="flex items-center gap-4">
+                <div
+                  class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-primary-container text-white flex items-center justify-center font-display text-xl font-black shadow-sm shrink-0"
+                  id="preview-avatar">
+                  {% if user.first_name %}{{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}{%
+                  else %}{{ user.username|slice:":2"|upper }}{% endif %}
+                </div>
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-display text-lg font-black text-on-surface" id="preview-name">
+                      {% if user.verified_legal_name %}{{ user.verified_legal_name }}{% elif user.first_name %}{{
+                      user.first_name }} {{ user.last_name }}{% else %}{{ user.username|title }}{% endif %}
+                    </span>
+                    <span
+                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-lowest text-tertiary font-mono text-[11px] font-bold border border-surface-container-high">
+                      <span class="material-symbols-outlined text-[13px] text-primary">verified</span>Verified Account
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-2 mt-2">
+                    <span class="inline-flex items-center gap-1 text-[11px] font-display font-bold text-primary">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>✓ Ready to Buy, Sell &amp; Transfer
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="flex flex-col sm:items-end gap-1.5 bg-surface-container-lowest/90 backdrop-blur-xs p-3 rounded-xl shrink-0 border border-surface-container-high">
+                <span class="text-[10px] font-mono uppercase text-secondary font-bold">
+                  Ticket Pass ID: LC-{% if user.id %}{{ user.id|stringformat:"04d" }}{% else %}9041{% endif %}
+                </span>
+                <svg class="h-6 w-36 text-on-surface" fill="currentColor" viewBox="0 0 120 20">
+                  <rect height="20" width="3" x="0" y="0"></rect>
+                  <rect height="20" width="1" x="5" y="0"></rect>
+                  <rect height="20" width="4" x="8" y="0"></rect>
+                  <rect height="20" width="2" x="14" y="0"></rect>
+                  <rect height="20" width="1" x="18" y="0"></rect>
+                  <rect height="20" width="5" x="21" y="0"></rect>
+                  <rect height="20" width="2" x="28" y="0"></rect>
+                  <rect height="20" width="1" x="32" y="0"></rect>
+                  <rect height="20" width="3" x="35" y="0"></rect>
+                  <rect height="20" width="2" x="40" y="0"></rect>
+                  <rect height="20" width="4" x="44" y="0"></rect>
+                  <rect height="20" width="1" x="50" y="0"></rect>
+                  <rect height="20" width="3" x="53" y="0"></rect>
+                  <rect height="20" width="2" x="58" y="0"></rect>
+                  <rect height="20" width="4" x="62" y="0"></rect>
+                  <rect height="20" width="1" x="68" y="0"></rect>
+                  <rect height="20" width="5" x="71" y="0"></rect>
+                  <rect height="20" width="2" x="78" y="0"></rect>
+                  <rect height="20" width="1" x="82" y="0"></rect>
+                  <rect height="20" width="3" x="85" y="0"></rect>
+                  <rect height="20" width="2" x="90" y="0"></rect>
+                  <rect height="20" width="4" x="94" y="0"></rect>
+                  <rect height="20" width="3" x="100" y="0"></rect>
+                  <rect height="20" width="2" x="105" y="0"></rect>
+                  <rect height="20" width="4" x="110" y="0"></rect>
+                  <rect height="20" width="4" x="116" y="0"></rect>
+                </svg>
+                <span class="text-[10px] font-mono text-tertiary font-bold tracking-widest">✓ VERIFIED FAN</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Integrity Console (Paired directly below the credential) -->
+        <div
+          class="bg-inverse-surface text-inverse-on-surface rounded-3xl p-6 sm:p-7 shadow-xl relative overflow-hidden border border-inverse-surface w-full">
+          <div class="absolute top-0 left-0 right-0 h-[2px] bg-primary-container"></div>
+          <div
+            class="absolute -top-10 -right-10 w-40 h-40 bg-primary-container/20 rounded-full blur-2xl pointer-events-none">
+          </div>
+
+          <div class="flex items-center justify-between pb-5 border-b border-surface-container-highest/20">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-primary-container animate-pulse"></span>
+              <span class="font-mono text-xs font-bold uppercase tracking-wider text-inverse-on-surface">Community
+                Safety &amp; Trust</span>
+            </div>
+          </div>
+
+          <div class="py-4">
+            <h3 class="font-display text-lg font-bold text-inverse-on-surface uppercase tracking-tight">Why We Verify
+              Every Member</h3>
+            <p class="text-xs text-secondary-fixed mt-1 leading-relaxed">lastchance protects genuine fans from ticket
+              fraud, bots, and overpriced resales.</p>
+          </div>
+
+          <div class="flex flex-col gap-3.5 py-1">
+            <div class="bg-surface-container-highest/10 p-4 rounded-2xl flex items-start gap-3.5 border border-white/5">
+              <div
+                class="w-8 h-8 rounded-xl bg-primary-container text-white flex items-center justify-center font-display text-xs font-bold shrink-0 mt-0.5 shadow-xs">
+                01</div>
+              <div class="flex flex-col">
+                <span class="text-sm font-display font-bold text-inverse-on-surface">Stops Bots &amp; Unfair Bulk
+                  Buying</span>
+                <p class="text-xs text-secondary-fixed mt-1 leading-relaxed">Each account connects to one real person.
+                  This makes it impossible for scalpers to use bots and buy dozens of tickets to resell at higher
+                  prices.</p>
+              </div>
+            </div>
+
+            <div class="bg-surface-container-highest/10 p-4 rounded-2xl flex items-start gap-3.5 border border-white/5">
+              <div
+                class="w-8 h-8 rounded-xl bg-primary-container text-white flex items-center justify-center font-display text-xs font-bold shrink-0 mt-0.5 shadow-xs">
+                02</div>
+              <div class="flex flex-col">
+                <span class="text-sm font-display font-bold text-inverse-on-surface">Official Ticket Name
+                  Re-Issue</span>
+                <p class="text-xs text-secondary-fixed mt-1 leading-relaxed">When you buy or sell a ticket, the provider
+                  re-issues it directly in the new attendee's name, matching your ID at venue turnstiles and train
+                  gates.</p>
+              </div>
+            </div>
+
+            <div class="bg-surface-container-highest/10 p-4 rounded-2xl flex items-start gap-3.5 border border-white/5">
+              <div
+                class="w-8 h-8 rounded-xl bg-primary-container text-white flex items-center justify-center font-display text-xs font-bold shrink-0 mt-0.5 shadow-xs">
+                03</div>
+              <div class="flex flex-col">
+                <span class="text-sm font-display font-bold text-inverse-on-surface">Safe Money Transfers</span>
+                <p class="text-xs text-secondary-fixed mt-1 leading-relaxed">Buyer payments are held safely until ticket
+                  validity is confirmed at entry, ensuring sellers get paid straight to their bank account with zero
+                  risk.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-4 mt-3 border-t border-surface-container-highest/20 flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary-container text-[18px]">verified</span>
+              <span class="font-mono text-xs font-bold text-inverse-on-surface">Official Partner for Train, Flight &amp;
+                Event Transfers</span>
+            </div>
+            <p class="text-[11px] text-secondary-fixed font-mono leading-normal">Bank-grade privacy standards &bull;
+              100% Privacy Protected &bull; Your data is never shared or sold.</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Inline Script for Micro-Interactions & Seamless State Flow -->
+<script>
+  function triggerDigiLocker(e) {
+    if (e) e.preventDefault();
+    const btn = document.getElementById('verify-btn');
+    const input = document.getElementById('legal-name');
+    const form = document.getElementById('ekyc-form');
+    const isConfigured = {{ is_setu_configured|yesno:"true,false" }};
+
+    if (!btn) return;
+
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `
+      <span class="material-symbols-outlined animate-spin text-[20px]">sync</span>
+      <span>Connecting to DigiLocker Setu Gateway...</span>
+    `;
+
+  if (isConfigured && form) {
+    setTimeout(() => {
+      form.submit();
+    }, 500);
+    return;
+  }
+
+  // Interactive Simulation flow when Setu API keys are not in env
+  setTimeout(() => {
+    btn.innerHTML = `
+        <span class="material-symbols-outlined text-[20px]">check_circle</span>
+        <span>Aadhaar Authenticated! Redirecting...</span>
+      `;
+    btn.classList.remove('bg-primary-container', 'hover:bg-primary');
+    btn.classList.add('bg-emerald-600', 'text-white');
+
+    const previewName = document.getElementById('preview-name');
+    if (input && previewName && input.value.trim() !== '') {
+      previewName.innerText = input.value.trim();
+    }
+
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+      btn.classList.remove('bg-emerald-600');
+      btn.classList.add('bg-primary-container', 'hover:bg-primary');
+      alert("Simulation: DigiLocker verified identity successfully! Your lastchance seller desk privileges are fully unlocked.");
+    }, 1200);
+  }, 1500);
+  }
+
+  function simulateTogglePreview() {
+    const card = document.getElementById('verified-preview-card');
+    if (card) {
+      card.classList.toggle('scale-[1.02]');
+      card.classList.toggle('ring-2');
+      card.classList.toggle('ring-primary-container');
+      setTimeout(() => {
+        card.classList.remove('scale-[1.02]', 'ring-2', 'ring-primary-container');
+      }, 800);
+    }
+  }
+
+  // Dynamic real-time name and avatar initials synchronisation
+  const nameInput = document.getElementById('legal-name');
+  const previewName = document.getElementById('preview-name');
+  const previewAvatar = document.getElementById('preview-avatar');
+  if (nameInput && previewName) {
+    nameInput.addEventListener('input', function () {
+      const val = this.value.trim();
+      if (val.length > 0) {
+        previewName.innerText = val;
+        if (previewAvatar) {
+          const parts = val.split(/\s+/);
+          const initials = parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : val.slice(0, 2).toUpperCase();
+          previewAvatar.innerText = initials;
+        }
+      } else {
+        previewName.innerText = 'Legal Name';
+      }
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,37 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+db.sqlite3
+
+# Environment and Secrets
+.env
+.env.local
+.env.*.local
+venv/
+env/
+.venv/
+myenv/
+
+# Media and Static files
+/media/
+/staticfiles/
+tsr_test_media/
+
+# Test and Coverage artifacts
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS and OS metadata
+.DS_Store
+._*
+Thumbs.db

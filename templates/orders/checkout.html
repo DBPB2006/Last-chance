@@ -1,0 +1,756 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checkout &bull; {{ listing.title }} &bull; lastchance{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+  <!-- Step / Assurance Header -->
+  <div
+    class="flex flex-wrap items-center justify-between gap-3 bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-surface-container-high/60">
+    <div class="flex items-center gap-3">
+      <a class="inline-flex items-center gap-2 text-on-surface-variant hover:text-primary-container font-body-lg text-sm transition-colors group"
+        href="{% url 'listing-detail' listing.id %}">
+        <span
+          class="material-symbols-outlined text-lg transition-transform group-hover:-translate-x-1">arrow_back</span>
+        <span>Back to Ticket Details</span>
+      </a>
+      <span class="text-surface-container-high hidden sm:inline">|</span>
+      <div class="hidden sm:block">
+        <h1 class="font-display-hero text-base font-extrabold text-on-surface leading-tight">
+          {% if listing.is_direct %}Complete Your Direct Ticket Booking{% else %}Complete Your Ticket Transfer{% endif %}
+        </h1>
+        <p class="font-body-lg text-xs text-on-surface-variant">Held for 10 minutes. Your digital ticket will be
+          officially registered in your name.</p>
+      </div>
+    </div>
+    <div
+      class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold uppercase tracking-wider font-display-hero border border-emerald-200">
+      <span class="material-symbols-outlined text-emerald-600 text-base"
+        style="font-variation-settings: 'FILL' 1;">verified_user</span>
+      <span>OFFICIAL ID VERIFIED • 100% SECURE CHECKOUT</span>
+    </div>
+  </div>
+
+  {% if not is_kyc_verified %}
+  <!-- DigiLocker KYC Verification Gate -->
+  <div
+    class="bg-surface-container-lowest rounded-3xl p-8 sm:p-12 text-center border border-surface-container-high shadow-card max-w-xl mx-auto my-8">
+    <div
+      class="w-16 h-16 rounded-2xl bg-primary-fixed text-primary flex items-center justify-center mx-auto mb-5 shadow-xs">
+      <span class="material-symbols-outlined text-3xl">verified_user</span>
+    </div>
+    <h2 class="text-xl font-display-hero font-extrabold text-on-surface tracking-tight mb-2">
+      DigiLocker Identity Verification Required
+    </h2>
+    <p class="text-on-surface-variant text-sm font-body-lg leading-relaxed max-w-md mx-auto mb-8">
+      Before reserving inventory or initiating a ticket transaction, your identity must be verified via Setu DigiLocker
+      Aadhaar eKYC. This ensures genuine attendees, prevents scalper bots, and secures your ticket.
+    </p>
+    <div class="flex items-center justify-center gap-3 flex-wrap">
+      <a href="{% url 'verification' %}?returnTo={% url 'checkout' listing.id %}&action={% if listing.is_direct %}direct_booking{% else %}resale_purchase{% endif %}"
+        class="py-3 px-6 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-display-hero text-xs font-bold uppercase tracking-wider shadow-md transition-all">
+        Verify with DigiLocker &rarr;
+      </a>
+      <a href="{% url 'listing-detail' listing.id %}"
+        class="py-3 px-6 rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface font-display-hero text-xs font-bold uppercase tracking-wider transition-colors border border-surface-container-high">
+        Return to Ticket Details
+      </a>
+    </div>
+  </div>
+  {% else %}
+
+  <!-- Horizontal 3-Step Checkout Corridor -->
+  <div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container-high/60">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <!-- Step 1 -->
+      <div class="flex items-center gap-3 p-3 rounded-xl bg-emerald-50/70 border border-emerald-200">
+        <div
+          class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-display-hero text-xs font-bold shrink-0">
+          <span class="material-symbols-outlined text-base">check</span>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5">
+            <span class="font-display-hero text-xs font-bold uppercase tracking-wider text-emerald-900">1. Traveler
+              Verified</span>
+            <span class="text-[10px] font-bold text-emerald-700 bg-emerald-200/70 px-1.5 py-0.2 rounded">Passed</span>
+          </div>
+          <p class="font-body-lg text-xs text-emerald-800 truncate">
+            Name: {{ attendee_name|default:user.verified_legal_name|default:user.username }}
+          </p>
+        </div>
+      </div>
+      <!-- Step 2 -->
+      <div class="flex items-center gap-3 p-3 rounded-xl bg-primary-fixed/40 border border-primary/20">
+        <div
+          class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-display-hero text-xs font-bold shrink-0">
+          <span>2</span>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5">
+            <span class="font-display-hero text-xs font-extrabold uppercase tracking-wider text-on-surface">2. Reserved
+              Seat</span>
+            <span class="text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.2 rounded">Active Hold</span>
+          </div>
+          <p class="font-body-lg text-xs text-on-surface-variant truncate">{{ listing.seat_or_coach }}</p>
+        </div>
+      </div>
+      <!-- Step 3 -->
+      <div class="flex items-center gap-3 p-3 rounded-xl bg-surface-container-low border border-surface-container-high">
+        <div
+          class="w-8 h-8 rounded-full bg-surface-container-high text-secondary flex items-center justify-center font-display-hero text-xs font-bold shrink-0">
+          <span>3</span>
+        </div>
+        <div class="min-w-0">
+          <span class="font-display-hero text-xs font-bold uppercase tracking-wider text-secondary">3. Payment &amp;
+            Transfer</span>
+          <p class="font-body-lg text-xs text-secondary truncate">Instant Vault Issuance</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Hold Urgency Bar -->
+  <div
+    class="w-full bg-surface-container-high rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-surface-container-high">
+    <div class="flex items-center gap-3">
+      <div
+        class="w-9 h-9 rounded-lg bg-primary-container text-on-primary flex items-center justify-center shrink-0 shadow-sm animate-pulse">
+        <span class="material-symbols-outlined text-xl">timer</span>
+      </div>
+      <div>
+        <p
+          class="font-display-hero text-sm font-extrabold text-on-surface uppercase tracking-tight flex items-center gap-2">
+          <span>TICKET HELD FOR YOU:</span>
+          <span class="font-mono text-primary font-black bg-primary-fixed px-2 py-0.5 rounded"
+            id="countdown">10:00</span>
+        </p>
+        <p class="font-body-lg text-xs text-on-surface-variant">Complete your purchase before this seat is released back
+          to other travelers.</p>
+      </div>
+    </div>
+    <div
+      class="flex items-center gap-2 text-xs font-bold text-on-surface-variant shrink-0 bg-surface-container-lowest px-3 py-1.5 rounded-lg border border-surface-container-high/60">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+      <span>Seat On Hold</span>
+    </div>
+  </div>
+
+  <!-- Top Error Box (Hidden by default) -->
+  <div id="checkout-error"
+    class="hidden p-4 rounded-xl text-xs font-bold bg-error-container text-on-error-container border border-error/20">
+  </div>
+
+  <!-- Two-Column Checkout Layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- LEFT COLUMN: Horizontal Boarding Pass & Verified Attendee Verification Module (7 cols) -->
+    <div class="lg:col-span-7 flex flex-col gap-6">
+
+      <!-- Horizontal Boarding Pass Ticket Metaphor Card -->
+      <div
+        class="relative bg-surface-container-lowest rounded-xl shadow-md overflow-hidden border border-surface-container-high/50">
+
+        <!-- Ticket Header Segment -->
+        <div
+          class="p-6 bg-gradient-to-r from-surface-container-low via-surface-container-lowest to-surface-container-low border-b border-surface-container-high/60">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div
+              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-primary-fixed text-on-primary-fixed text-xs font-display-hero font-extrabold uppercase tracking-wider">
+              <span class="material-symbols-outlined text-sm">
+                {% if listing.category == 'train' %}train{% elif listing.category == 'flight' %}flight{% elif listing.category == 'movie' %}movie{% elif listing.category == 'concert' or listing.category == 'festival' %}festival{% elif listing.category == 'sports' %}sports_soccer{% else %}confirmation_number{% endif %}
+              </span>
+              <span>{{ listing.category|upper }}</span>
+            </div>
+            <div
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md {% if listing.is_direct %}bg-blue-50 text-blue-700 border border-blue-200{% else %}bg-tertiary-fixed text-on-tertiary-fixed{% endif %} text-xs font-display-hero font-bold uppercase tracking-wider">
+              <span class="material-symbols-outlined text-xs">{% if listing.is_direct %}storefront{% else %}thumb_up{% endif %}</span>
+              <span>{% if listing.is_direct %}DIRECT PROVIDER TICKET{% else %}GUARANTEED RESALE PASS{% endif %}</span>
+            </div>
+          </div>
+          <h2 class="font-display-hero text-2xl sm:text-3xl font-extrabold text-on-surface tracking-tight">
+            {{ listing.title }}
+          </h2>
+          <p class="font-body-lg text-xs text-on-surface-variant mt-1">
+            {{ listing.provider_name }} &bull; {{ listing.venue_or_route }} &bull; Confirmed Passenger Seat
+          </p>
+        </div>
+
+        <!-- Journey Waypoint Corridor (Horizontal Boarding Pass Layout) -->
+        <div class="p-6 bg-surface-container-lowest">
+          {% if listing.destination %}
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex-1">
+              <span class="font-mono text-xs uppercase tracking-wider text-secondary font-bold">Departure /
+                Origin</span>
+              <p class="font-display-hero text-lg sm:text-2xl font-black text-on-surface mt-0.5">
+                {{ listing.formatted_date }}
+              </p>
+              <p class="font-display-hero text-sm font-bold text-on-surface">{{ listing.origin }}</p>
+              <p class="font-body-lg text-xs text-on-surface-variant">Provider: {{ listing.provider_name }}</p>
+            </div>
+            <div class="flex flex-col items-center px-2 shrink-0">
+              <span
+                class="font-mono text-[11px] font-bold text-tertiary bg-tertiary-fixed/60 px-2.5 py-0.5 rounded-full mb-1">
+                {{ listing.category|title }} Route
+              </span>
+              <div class="w-20 sm:w-32 h-0.5 bg-surface-container-high relative flex items-center justify-center">
+                <span
+                  class="material-symbols-outlined text-base text-primary-container bg-surface-container-lowest px-1">arrow_forward</span>
+              </div>
+              <span class="font-mono text-[10px] text-secondary mt-1">Confirmed Admission</span>
+            </div>
+            <div class="flex-1 text-right">
+              <span class="font-mono text-xs uppercase tracking-wider text-secondary font-bold">Arrival /
+                Destination</span>
+              <p class="font-display-hero text-lg sm:text-2xl font-black text-on-surface mt-0.5">Scheduled</p>
+              <p class="font-display-hero text-sm font-bold text-on-surface">{{ listing.destination }}</p>
+              <p class="font-body-lg text-xs text-on-surface-variant">Gate Admission Pass</p>
+            </div>
+          </div>
+          {% else %}
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex-1">
+              <span class="font-mono text-xs uppercase tracking-wider text-secondary font-bold">Event Schedule</span>
+              <p class="font-display-hero text-lg sm:text-2xl font-black text-on-surface mt-0.5">
+                {{ listing.formatted_date }}
+              </p>
+              <p class="font-body-lg text-xs text-on-surface-variant">Issuing Provider: {{ listing.provider_name }}</p>
+            </div>
+            <div class="flex flex-col items-center px-2 shrink-0">
+              <span
+                class="font-mono text-[11px] font-bold text-tertiary bg-tertiary-fixed/60 px-2.5 py-0.5 rounded-full mb-1">
+                {{ listing.category|title }} Event
+              </span>
+              <div class="w-20 sm:w-32 h-0.5 bg-surface-container-high relative flex items-center justify-center">
+                <span
+                  class="material-symbols-outlined text-base text-primary-container bg-surface-container-lowest px-1">confirmation_number</span>
+              </div>
+              <span class="font-mono text-[10px] text-secondary mt-1">100% Genuine Pass</span>
+            </div>
+            <div class="flex-1 text-right">
+              <span class="font-mono text-xs uppercase tracking-wider text-secondary font-bold">Venue / Location</span>
+              <p class="font-display-hero text-base sm:text-lg font-bold text-on-surface mt-0.5">{{ listing.origin }}
+              </p>
+              <p class="font-body-lg text-xs text-on-surface-variant">Turnstile / Gate Entry</p>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Seat Grid Badges -->
+          <div class="grid grid-cols-3 gap-3 mt-6 pt-5 bg-surface-container-low rounded-lg p-3">
+            <div class="text-center">
+              <span class="font-mono text-[10px] uppercase tracking-wider text-secondary font-bold">Seat /
+                Allocation</span>
+              <p class="font-display-hero text-sm sm:text-base font-extrabold text-primary truncate">
+                {{ listing.seat_or_coach }}
+              </p>
+            </div>
+            <div class="text-center">
+              <span class="font-mono text-[10px] uppercase tracking-wider text-secondary font-bold">Ticket
+                Inventory</span>
+              <p class="font-display-hero text-sm sm:text-base font-extrabold text-on-surface truncate">
+                1 {% if not listing.is_direct %}(1-of-1 Resale Pass){% else %}Seat{% endif %}
+              </p>
+            </div>
+            <div class="text-center">
+              <span class="font-mono text-[10px] uppercase tracking-wider text-secondary font-bold">Trust
+                Guarantee</span>
+              <p class="font-display-hero text-sm sm:text-base font-extrabold text-emerald-700 truncate">DigiLocker
+                Verified</p>
+            </div>
+          </div>
+
+          {% if not listing.is_direct %}
+          <!-- Verified Resale Notice -->
+          <div
+            class="mt-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-[#059669] text-[20px] shrink-0 mt-0.5">verified</span>
+            <div>
+              <div class="font-bold flex items-center gap-1.5">
+                <span>1-of-1 Individual Resale Pass</span>
+                <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-semibold">Strictly Single Ticket</span>
+              </div>
+              <p class="text-[11px] text-emerald-800 leading-relaxed mt-0.5 mb-0">
+                This is a verified peer-to-peer resale ticket listed by <strong>@{{ listing.seller_username }}</strong>
+                for specific seat <strong>{{ listing.seat_or_coach }}</strong>.
+                You can only purchase this individual ticket. Upon payment confirmation, ownership and the dynamic QR
+                pass will be immediately transferred to your Ticket Vault.
+              </p>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Perforation Seam with Concave Notches -->
+        <div class="relative w-full h-8 flex items-center bg-surface-container-lowest">
+          <!-- Left Cutout Notch -->
+          <div class="absolute -left-4 w-8 h-8 rounded-full bg-surface border-r border-surface-container-high/60"></div>
+          <!-- Dashed Perforation Line -->
+          <div class="w-full mx-6 h-0 border-b-2 border-dashed border-surface-container-high"></div>
+          <!-- Right Cutout Notch -->
+          <div class="absolute -right-4 w-8 h-8 rounded-full bg-surface border-l border-surface-container-high/60">
+          </div>
+        </div>
+
+        <!-- Boarding Pass Stub Section -->
+        <div class="p-6 bg-surface-container-lowest flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-full bg-primary-fixed text-primary flex items-center justify-center font-display-hero font-extrabold text-sm shrink-0">
+              {% if listing.is_direct %}
+              {{ listing.provider_name|slice:":2"|upper }}
+              {% else %}
+              {{ listing.seller_username|slice:":2"|upper }}
+              {% endif %}
+            </div>
+            <div>
+              <p class="font-display-hero text-xs font-bold text-on-surface flex items-center gap-1">
+                {% if listing.is_direct %}
+                <span>Issued by: {{ listing.provider_name }}</span>
+                {% else %}
+                <span>Sold by: @{{ listing.seller_username }}</span>
+                {% endif %}
+                <span class="material-symbols-outlined text-xs text-emerald-600"
+                  style="font-variation-settings: 'FILL' 1;">verified</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Authentic Machine Barcode Illustration -->
+          <div class="flex flex-col items-end">
+            <svg class="w-40 h-8 text-on-surface" fill="currentColor" viewBox="0 0 160 32">
+              <rect height="32" width="3" x="0" y="0"></rect>
+              <rect height="32" width="1.5" x="5" y="0"></rect>
+              <rect height="32" width="4" x="8" y="0"></rect>
+              <rect height="32" width="1.5" x="14" y="0"></rect>
+              <rect height="32" width="3" x="18" y="0"></rect>
+              <rect height="32" width="5" x="23" y="0"></rect>
+              <rect height="32" width="2" x="30" y="0"></rect>
+              <rect height="32" width="1.5" x="34" y="0"></rect>
+              <rect height="32" width="4" x="38" y="0"></rect>
+              <rect height="32" width="2" x="44" y="0"></rect>
+              <rect height="32" width="6" x="48" y="0"></rect>
+              <rect height="32" width="1.5" x="56" y="0"></rect>
+              <rect height="32" width="3" x="60" y="0"></rect>
+              <rect height="32" width="5" x="65" y="0"></rect>
+              <rect height="32" width="2" x="72" y="0"></rect>
+              <rect height="32" width="4" x="76" y="0"></rect>
+              <rect height="32" width="1.5" x="82" y="0"></rect>
+              <rect height="32" width="3" x="86" y="0"></rect>
+              <rect height="32" width="6" x="91" y="0"></rect>
+              <rect height="32" width="2" x="99" y="0"></rect>
+              <rect height="32" width="4" x="103" y="0"></rect>
+              <rect height="32" width="1.5" x="109" y="0"></rect>
+              <rect height="32" width="3" x="113" y="0"></rect>
+              <rect height="32" width="5" x="118" y="0"></rect>
+              <rect height="32" width="2" x="125" y="0"></rect>
+              <rect height="32" width="4" x="130" y="0"></rect>
+              <rect height="32" width="1.5" x="136" y="0"></rect>
+              <rect height="32" width="5" x="140" y="0"></rect>
+              <rect height="32" width="2" x="147" y="0"></rect>
+              <rect height="32" width="4" x="151" y="0"></rect>
+              <rect height="32" width="3" x="157" y="0"></rect>
+            </svg>
+            <span class="font-mono text-[9px] tracking-widest text-secondary mt-0.5">
+              TICKET PASS &bull; {{ listing.ticket_ref|default:"LC-SECURE" }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Verified Attendee / Official Name Re-Issue Module -->
+      <div
+        class="bg-surface-container-lowest rounded-xl p-6 shadow-md space-y-4 border border-surface-container-high/50">
+        <div class="flex items-center justify-between pb-3 bg-surface-container-high/40 p-3 rounded-lg">
+          <div class="flex items-center gap-2">
+            <span
+              class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-display-hero text-xs font-bold">1</span>
+            <h3 class="font-display-hero text-base font-extrabold text-on-surface">Traveler Details</h3>
+          </div>
+          <span
+            class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+            <span class="material-symbols-outlined text-xs">done_all</span> ID Confirmed
+          </span>
+        </div>
+
+        <p class="font-body-lg text-xs text-on-surface-variant leading-relaxed">
+          Ticket checkers will verify this name against your government ID when boarding or entering venue. Your ticket
+          and dynamic QR credential will be officially issued in this name.
+        </p>
+
+        <form id="checkout-form" class="space-y-4">
+          {% csrf_token %}
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            <div class="space-y-1">
+              <label for="attendee-name"
+                class="block font-mono text-[11px] uppercase tracking-wider text-secondary font-bold">
+                TRAVELER FULL NAME <span class="text-error">*</span>
+              </label>
+              <div class="relative">
+                <input
+                  class="w-full bg-surface-container-low text-on-surface font-display-hero font-bold text-sm px-3.5 py-2.5 rounded-lg border border-surface-container-high focus:bg-white focus:ring-2 focus:ring-primary-container outline-none transition"
+                  readonly id="attendee-name" name="attendee_name" type="text"
+                  value="{{ attendee_name|default:user.verified_legal_name|default:user.get_full_name|default:user.username }}"
+                  placeholder="Full legal name as printed on ID">
+                <span class="material-symbols-outlined absolute right-3 top-2.5 text-emerald-600 text-lg"
+                  style="font-variation-settings: 'FILL' 1;">verified</span>
+              </div>
+              <span class="font-body-lg text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">shield</span> DigiLocker Verified Legal Name
+              </span>
+            </div>
+
+            <div class="space-y-1">
+              <label class="block font-mono text-[11px] uppercase tracking-wider text-secondary font-bold">Verification
+                Source</label>
+              <div
+                class="w-full bg-surface-container-low text-on-surface font-display-hero font-bold text-sm px-3.5 py-2.5 rounded-lg border border-surface-container-high flex items-center justify-between">
+                <span class="flex items-center gap-1.5 text-xs text-emerald-800">
+                  <span class="material-symbols-outlined text-emerald-600 text-base">task_alt</span>
+                  <span>Setu DigiLocker eKYC</span>
+                </span>
+                <span
+                  class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-mono font-bold uppercase">Active</span>
+              </div>
+              <span class="font-body-lg text-[11px] text-secondary font-medium block">
+                Permanently registered on encrypted security ledger
+              </span>
+            </div>
+          </div>
+        </form>
+
+        <!-- Notification Delivery Endpoints -->
+        <div class="bg-surface-container-low p-4 rounded-lg space-y-2 mt-2 border border-surface-container-high/40">
+          <div class="flex items-center justify-between text-xs font-display-hero font-bold text-on-surface">
+            <span class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-sm text-primary-container">mail</span>
+              <span>Ticket &amp; Receipt by Email:</span>
+            </span>
+            <span class="font-mono text-on-surface-variant font-semibold">
+              {{ user.email|default:"m.jain@example.com" }}
+            </span>
+          </div>
+          <div class="flex items-center justify-between text-xs font-display-hero font-bold text-on-surface">
+            <span class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-sm text-primary-container">sms</span>
+              <span>SMS Alerts &amp; Booking Number:</span>
+            </span>
+            <span class="font-mono text-on-surface-variant font-semibold">
+              {{ user.phone|default:"+91 98765 43210" }}
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Plain-Language Guarantee Ledger Card & Settlement Console (5 cols) -->
+    <div class="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-28">
+      <div
+        class="bg-surface-container-lowest rounded-xl shadow-lg p-6 space-y-5 border border-surface-container-high/60">
+        <div class="flex items-center justify-between border-b pb-3 border-surface-container-high">
+          <h3 class="font-display-hero text-lg font-extrabold text-on-surface uppercase tracking-tight">PAYMENT SUMMARY
+          </h3>
+          <span
+            class="text-[10px] font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+            RESERVED 10 MINS
+          </span>
+        </div>
+
+        <!-- Itemized Reassurance Ledger -->
+        <div class="space-y-3 font-body-lg text-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-on-surface-variant">Seat Allocation:</span>
+            <strong class="font-display-hero font-bold text-on-surface">{{ listing.seat_or_coach }}</strong>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-on-surface-variant">Quantity:</span>
+            <strong class="font-display-hero font-bold text-on-surface">
+              1 {% if not listing.is_direct %}(1-of-1 Resale Pass){% else %}Seat{% endif %}
+            </strong>
+          </div>
+
+          {% if not listing.is_direct and listing.face_value %}
+          <div class="flex items-center justify-between">
+            <span class="text-on-surface-variant">Original Face Value:</span>
+            <span class="font-display-hero font-bold text-on-surface">₹{{ listing.face_value }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-on-surface-variant">Seller Resale Payout:</span>
+            <span class="font-display-hero font-bold text-on-surface">₹{{ listing.asking_price }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1 text-on-surface-variant">
+              <span>Platform Service Fee:</span>
+              <span class="material-symbols-outlined text-xs text-emerald-600"
+                title="Transparent resale fee">check_circle</span>
+            </div>
+            <span class="font-display-hero font-bold text-on-surface">₹{{ listing.service_fee|default:'0.00' }}</span>
+          </div>
+          {% else %}
+          <div class="flex items-center justify-between">
+            <span class="text-on-surface-variant">Ticket Base Fare:</span>
+            <span class="font-display-hero font-bold text-on-surface">₹{{ listing.price }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1 text-on-surface-variant">
+              <span>Platform Service Fee:</span>
+              <span class="material-symbols-outlined text-xs text-emerald-600"
+                title="Zero markup direct booking">check_circle</span>
+            </div>
+            <span class="font-display-hero font-bold text-emerald-600">₹0.00 (Covered by lastchance)</span>
+          </div>
+          {% endif %}
+
+          <div class="flex items-center justify-between">
+            <span class="text-on-surface-variant">Buyer Money Protection:</span>
+            <span class="font-display-hero font-bold text-emerald-600">FREE</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-on-surface-variant">Payment Processing:</span>
+            <span class="font-display-hero font-bold text-emerald-600">FREE</span>
+          </div>
+
+          <!-- Divider shift via background -->
+          <div class="h-0.5 bg-surface-container-high my-2"></div>
+
+          <div class="flex items-baseline justify-between pt-1">
+            <div>
+              <span class="font-display-hero text-base font-extrabold text-on-surface block">Total Amount to Pay</span>
+              <span class="font-body-lg text-[11px] text-on-surface-variant">Includes all taxes and official name
+                update</span>
+            </div>
+            <div class="text-right">
+              <span class="font-display-hero text-3xl font-black text-primary tracking-tight">
+                ₹{{ listing.total_price|default:listing.price }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {% if not listing.is_direct %}
+        <div
+          class="text-xs text-emerald-800 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 font-semibold flex items-center gap-1.5 font-mono">
+          <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span>Verified P2P resale (20% above original price)</span>
+        </div>
+        {% endif %}
+
+        <!-- Customer-Centric CTA Button -->
+        <button type="submit" form="checkout-form" id="pay-button"
+          class="w-full py-4 px-6 rounded-xl bg-primary-container hover:bg-primary active:scale-[0.99] text-on-primary font-display-hero text-base font-extrabold uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer">
+          <span class="material-symbols-outlined text-xl">lock</span>
+          <span>Pay ₹{{ listing.total_price|default:listing.price }} &amp; Get Ticket Now</span>
+        </button>
+
+        <p class="text-center text-xs text-secondary font-medium flex items-center justify-center gap-1.5 font-mono">
+          <span class="material-symbols-outlined text-sm">lock</span>
+          <span>Secured via Razorpay Gateway &bull; Instant Vault Issuance</span>
+        </p>
+
+        <!-- Buyer Protection Box -->
+        <div class="bg-surface-container-low rounded-xl p-4 space-y-3 border border-surface-container-high/60">
+          <div
+            class="flex items-center gap-2 text-on-surface font-display-hero text-xs font-extrabold uppercase tracking-wide">
+            <span class="material-symbols-outlined text-primary-container text-base"
+              style="font-variation-settings: 'FILL' 1;">verified</span>
+            <span>100% Genuine Ticket Guarantee</span>
+          </div>
+          <ul class="space-y-2 font-body-lg text-xs text-on-surface-variant">
+            <li class="flex items-start gap-2">
+              <span class="material-symbols-outlined text-sm text-emerald-600 shrink-0">check_circle</span>
+              <span><strong>Instant Ticket Delivery:</strong> Your digital ticket and QR credential appear immediately
+                in your account right after payment.</span>
+            </li>
+
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Razorpay Checkout Integration Script -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    (function initCheckout() {
+      // 10-minute countdown hold timer
+      let duration = 10 * 60;
+      const countdownEl = document.getElementById('countdown');
+      if (countdownEl) {
+        const timer = setInterval(() => {
+          duration--;
+          if (duration <= 0) {
+            clearInterval(timer);
+            countdownEl.innerText = '00:00';
+            return;
+          }
+          const mins = Math.floor(duration / 60);
+          const secs = duration % 60;
+          countdownEl.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }, 1000);
+      }
+
+      // Razorpay Checkout Handler
+      const checkoutForm = document.getElementById('checkout-form');
+      const payButton = document.getElementById('pay-button');
+      const attendeeInput = document.getElementById('attendee-name');
+      const errorBox = document.getElementById('checkout-error');
+      const originalButtonHtml = payButton ? payButton.innerHTML : '<span>Pay with Razorpay</span>';
+
+      function showError(msg) {
+        if (!errorBox) return;
+        errorBox.textContent = msg;
+        errorBox.classList.remove('hidden');
+        errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      function hideError() {
+        if (!errorBox) return;
+        errorBox.classList.add('hidden');
+        errorBox.textContent = '';
+      }
+
+      function getCsrfToken() {
+        const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        return input ? input.value : '';
+      }
+
+      async function completeVerification(orderId, paymentPayload) {
+        payButton.disabled = true;
+        payButton.innerHTML = '<span class="material-symbols-outlined animate-spin text-xl mr-2">sync</span><span>Verifying Payment &amp; Issuing Ticket...</span>';
+
+        try {
+          const verifyUrl = "{% url 'checkout-verify' 0 %}".replace('/0/', '/' + orderId + '/');
+          const verifyResp = await fetch(verifyUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCsrfToken(),
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(paymentPayload)
+          });
+
+          const verifyData = await verifyResp.json();
+
+          if (verifyResp.ok && verifyData.success) {
+            window.location.href = verifyData.redirect_url;
+          } else {
+            showError(verifyData.error || 'Payment verification failed at server.');
+            payButton.disabled = false;
+            payButton.innerHTML = originalButtonHtml;
+          }
+        } catch (vErr) {
+          showError('Error communicating with server during payment verification.');
+          payButton.disabled = false;
+          payButton.innerHTML = originalButtonHtml;
+        }
+      }
+
+      if (checkoutForm) {
+        checkoutForm.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          hideError();
+
+          const attendeeName = attendeeInput ? attendeeInput.value.trim() : '';
+          if (!attendeeName) {
+            showError('Please provide an attendee or passenger legal name for this ticket.');
+            return;
+          }
+
+          payButton.disabled = true;
+          payButton.innerHTML = '<span class="material-symbols-outlined animate-spin text-xl mr-2">sync</span><span>Reserving Inventory &amp; Initializing Payment...</span>';
+
+          try {
+            const createResp = await fetch("{% url 'checkout' listing.id %}", {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+              body: JSON.stringify({ attendee_name: attendeeName })
+            });
+
+            const createData = await createResp.json();
+
+            if (!createResp.ok || !createData.success) {
+              showError(createData.error || createData.detail || 'Failed to initiate checkout.');
+              payButton.disabled = false;
+              payButton.innerHTML = originalButtonHtml;
+              return;
+            }
+
+            const order = createData.order;
+            const rzp = createData.razorpay;
+
+            if (!window.Razorpay) {
+              showError('Razorpay payment gateway script could not be loaded. Please check your internet connection.');
+              payButton.disabled = false;
+              payButton.innerHTML = originalButtonHtml;
+              return;
+            }
+
+            const callbackUrl = window.location.origin + "{% url 'checkout-verify' 0 %}".replace('/0/', '/' + order.id + '/');
+
+            const options = {
+              key: rzp.key_id,
+              amount: rzp.amount,
+              currency: rzp.currency,
+              name: 'lastchance Marketplace',
+              description: '{{ listing.title|escapejs }} — {{ listing.seat_or_coach|escapejs }}',
+              order_id: rzp.order_id,
+              callback_url: callbackUrl,
+              redirect: true,
+              prefill: {
+                name: attendeeName,
+                email: '{{ user.email|escapejs }}',
+                contact: '{{ user.phone|default:"9876543210"|escapejs }}'
+              },
+              theme: {
+                color: '#FF6600'
+              },
+              modal: {
+                ondismiss: function () {
+                  payButton.disabled = false;
+                  payButton.innerHTML = originalButtonHtml;
+                }
+              },
+              handler: async function (paymentResponse) {
+                await completeVerification(order.id, {
+                  razorpay_order_id: paymentResponse.razorpay_order_id,
+                  razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                  razorpay_signature: paymentResponse.razorpay_signature
+                });
+              }
+            };
+
+            const rzpInstance = new window.Razorpay(options);
+            rzpInstance.on('payment.failed', function (failedResponse) {
+              const failDetail = failedResponse.error ? failedResponse.error.description : 'Transaction declined.';
+              showError('Payment failed: ' + failDetail);
+              payButton.disabled = false;
+              payButton.innerHTML = originalButtonHtml;
+            });
+
+            rzpInstance.open();
+
+          } catch (err) {
+            showError('Network error while initiating payment. Please try again.');
+            payButton.disabled = false;
+            payButton.innerHTML = originalButtonHtml;
+          }
+        });
+      }
+    })();
+  </script>
+  {% endif %}
+
+</div>
+{% endblock %}

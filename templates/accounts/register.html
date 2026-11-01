@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sign Up &bull; lastchance{% endblock %}
+
+{% block main_class %}w-full pt-28 sm:pt-32 bg-[#FAFAFA] flex-1{% endblock %}
+
+{% block content %}
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8" id="signup-box">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative">
+
+    <!-- LEFT COLUMN: Ticket Card -->
+    <div class="lg:col-span-5 flex flex-col items-start pt-2">
+      <!-- Orange Ticket Card -->
+      <div class="relative w-full max-w-[390px] bg-[#FF6600] rounded-2xl text-black shadow-xl overflow-hidden">
+        <!-- Cutout notches on sides -->
+        <div class="absolute -left-3.5 top-[calc(100%-85px)] w-7 h-7 bg-[#FAFAFA] rounded-full z-10"></div>
+        <div class="absolute -right-3.5 top-[calc(100%-85px)] w-7 h-7 bg-[#FAFAFA] rounded-full z-10"></div>
+
+        <div class="p-6 pb-4">
+          <!-- Header & Badges -->
+          <div class="flex items-center justify-between pb-2">
+            <div class="flex items-center gap-2 font-display text-xl font-bold tracking-tight text-black">
+              <span>NEW</span>
+              <span class="material-symbols-outlined text-[18px]">person_add</span>
+              <span>MEMBER</span>
+            </div>
+            <span class="bg-black/90 text-white text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+              REGISTER
+            </span>
+          </div>
+
+          <!-- Ticket Info Subline & Verification Tag -->
+          <div class="flex items-center justify-between text-[10px] font-mono font-bold text-black/80 pb-2 border-b border-black/15">
+            <span>MEMBER ONBOARDING &bull; DIGILOCKER VERIFIED</span>
+            <span class="bg-white/80 text-black text-[9px] font-bold uppercase px-2 py-0.5 rounded-md shadow-xs">
+              VERIFIED
+            </span>
+          </div>
+
+          <!-- Django Messages / Errors -->
+          {% if messages %}
+          <div class="space-y-1 mt-2.5 mb-1">
+            {% for message in messages %}
+            <div class="text-[11px] font-bold py-1.5 px-2.5 rounded bg-black/90 text-white leading-tight">
+              {{ message }}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- Embedded Ticket Registration Form (Fields strictly backed by User model & backend view) -->
+          <form class="space-y-3 py-3" method="post" action="{% url 'register' %}">
+            {% csrf_token %}
+            {% if next %}
+            <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+
+            <!-- Username -->
+            <div>
+              <label for="username" class="block text-[10px] font-mono font-extrabold uppercase tracking-wider text-black/80 mb-1">
+                USERNAME
+              </label>
+              <input type="text" id="username" name="username" value="{{ username|default:'' }}"
+                placeholder="Choose a username"
+                class="w-full bg-white/95 text-black placeholder-gray-400 text-xs font-medium rounded-lg px-3 py-2 border border-black/10 focus:ring-1 focus:ring-black outline-none shadow-sm"
+                required autofocus>
+            </div>
+
+            <!-- Email Address -->
+            <div>
+              <label for="email" class="block text-[10px] font-mono font-extrabold uppercase tracking-wider text-black/80 mb-1">
+                EMAIL ADDRESS
+              </label>
+              <input type="email" id="email" name="email" value="{{ email|default:'' }}"
+                placeholder="you@example.com"
+                class="w-full bg-white/95 text-black placeholder-gray-400 text-xs font-medium rounded-lg px-3 py-2 border border-black/10 focus:ring-1 focus:ring-black outline-none shadow-sm"
+                required>
+            </div>
+
+            <!-- Phone Number (Optional) -->
+            <div>
+              <label for="phone" class="block text-[10px] font-mono font-extrabold uppercase tracking-wider text-black/80 mb-1">
+                PHONE NUMBER (OPTIONAL)
+              </label>
+              <input type="tel" id="phone" name="phone" value="{{ phone|default:'' }}" placeholder="e.g. 9876543210"
+                class="w-full bg-white/95 text-black placeholder-gray-400 text-xs font-medium rounded-lg px-3 py-2 border border-black/10 focus:ring-1 focus:ring-black outline-none shadow-sm">
+            </div>
+
+            <!-- Passwords in 2-Column Grid -->
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label for="password" class="block text-[9px] font-mono font-extrabold uppercase tracking-wider text-black/80 mb-1">
+                  CREATE PASSWORD
+                </label>
+                <input type="password" id="password" name="password" placeholder="••••••••"
+                  class="w-full bg-white/95 text-black placeholder-gray-400 text-xs font-medium rounded-lg px-3 py-2 border border-black/10 focus:ring-1 focus:ring-black outline-none shadow-sm"
+                  required>
+              </div>
+              <div>
+                <label for="confirm-password" class="block text-[9px] font-mono font-extrabold uppercase tracking-wider text-black/80 mb-1">
+                  CONFIRM PASSWORD
+                </label>
+                <input type="password" id="confirm-password" name="password_confirm" placeholder="••••••••"
+                  class="w-full bg-white/95 text-black placeholder-gray-400 text-xs font-medium rounded-lg px-3 py-2 border border-black/10 focus:ring-1 focus:ring-black outline-none shadow-sm"
+                  required>
+              </div>
+            </div>
+
+            <!-- Submission Button -->
+            <button type="submit"
+              class="w-full bg-black hover:bg-neutral-800 text-white font-black text-xs uppercase tracking-wider py-2.5 px-4 rounded-lg transition duration-150 flex items-center justify-center gap-1.5 shadow mt-2 cursor-pointer font-display">
+              <span>CREATE ACCOUNT &amp; BOARD</span>
+              <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </button>
+          </form>
+
+          <div class="flex justify-between items-center pt-2 text-[10px] font-bold text-black/80">
+            <span>Already have an account?</span>
+            <a href="{% url 'login' %}{% if next %}?next={{ next }}{% endif %}"
+              class="underline hover:text-white transition">
+              Log In Here &rarr;
+            </a>
+          </div>
+        </div>
+
+        <!-- Perforated separator -->
+        <div class="border-b-2 border-dashed border-black/30 my-1 mx-4"></div>
+
+        <!-- Ticket Barcode Area & Pass info -->
+        <div class="p-4 pt-2 pb-3 flex flex-col items-center justify-center bg-[#FF6600]">
+          <div class="flex items-center gap-[3px] bg-transparent py-1 justify-center w-full">
+            <span class="inline-block h-7 bg-[#111111] w-1.5"></span>
+            <span class="inline-block h-7 bg-[#111111] w-1"></span>
+            <span class="inline-block h-7 bg-[#111111] w-2.5"></span>
+            <span class="inline-block h-7 bg-[#111111] w-1"></span>
+            <span class="inline-block h-7 bg-[#111111] w-0.5"></span>
+            <span class="inline-block h-7 bg-[#111111] w-2"></span>
+            <span class="inline-block h-7 bg-[#111111] w-3"></span>
+            <span class="inline-block h-7 bg-[#111111] w-1"></span>
+            <span class="inline-block h-7 bg-[#111111] w-1.5"></span>
+            <span class="inline-block h-7 bg-[#111111] w-0.5"></span>
+            <span class="inline-block h-7 bg-[#111111] w-2.5"></span>
+            <span class="inline-block h-7 bg-[#111111] w-1.5"></span>
+            <span class="inline-block h-7 bg-[#111111] w-3"></span>
+            <span class="inline-block h-7 bg-[#111111] w-1"></span>
+            <span class="inline-block h-7 bg-[#111111] w-2"></span>
+            <span class="inline-block h-7 bg-[#111111] w-0.5"></span>
+            <span class="inline-block h-7 bg-[#111111] w-2.5"></span>
+            <span class="inline-block h-7 bg-[#111111] w-1.5"></span>
+            <span class="inline-block h-7 bg-[#111111] w-2"></span>
+            <span class="inline-block h-7 bg-[#111111] w-3"></span>
+            <span class="inline-block h-7 bg-[#111111] w-1"></span>
+            <span class="inline-block h-7 bg-[#111111] w-1.5"></span>
+          </div>
+          <p class="text-[9px] font-mono font-black uppercase tracking-wider text-black/70 mt-1">
+            TICKET REG PASS &bull; DIGILOCKER VERIFIED
+          </p>
+        </div>
+
+        <!-- Authentic Sawtooth Torn Paper Bottom Edge -->
+        <div class="w-full overflow-hidden leading-none -mb-[1px]">
+          <svg class="w-full h-2.5 text-white fill-current block" preserveAspectRatio="none" viewBox="0 0 200 10">
+            <polygon
+              points="0,10 5,0 10,10 15,0 20,10 25,0 30,10 35,0 40,10 45,0 50,10 55,0 60,10 65,0 70,10 75,0 80,10 85,0 90,10 95,0 100,10 105,0 110,10 115,0 120,10 125,0 130,10 135,0 140,10 145,0 150,10 155,0 160,10 165,0 170,10 175,0 180,10 185,0 190,10 195,0 200,10">
+            </polygon>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Bottom Left CTA section under ticket -->
+      <div class="mt-8 z-20 relative">
+        <h2 class="text-3xl sm:text-4xl font-black uppercase tracking-tight text-on-surface leading-none font-display">
+          BOOK <span class="text-primary-container">PASSES</span><br>
+          &amp; TICKETS
+        </h2>
+        <p class="text-xs sm:text-sm font-medium text-secondary mt-2 max-w-xs leading-snug">
+          Verified digital ticketing with Setu DigiLocker KYC protection and authentic P2P transfer guarantees.
+        </p>
+        <div class="mt-4">
+          <a class="inline-block bg-inverse-surface hover:bg-black text-white font-bold text-xs uppercase tracking-wider px-7 py-3 rounded-full transition shadow-md font-label-ticket"
+            href="{% url 'explore' %}">
+            Explore Marketplace &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Big Typography & Bullet Train Composition -->
+    <div class="lg:col-span-7 flex flex-col justify-center relative">
+      <!-- Top Typography: LET THE JOURNEY BEGIN -->
+      <div class="flex flex-col items-end text-right pr-4 lg:pr-10 relative z-20">
+        <h1
+          class="text-6xl sm:text-7xl lg:text-8xl font-black uppercase tracking-tight leading-[0.88] text-on-surface select-none font-display">
+          LET<br>
+          THE<br>
+          <span class="text-primary-container">JOURNEY</span><br>
+          BEGIN
+        </h1>
+      </div>
+
+      <!-- Connecting Graphic Arrow Swoosh SVG -->
+      <div class="absolute inset-0 pointer-events-none z-10 hidden sm:block">
+        <svg class="w-full h-full" fill="none" viewBox="0 0 800 650" xmlns="http://www.w3.org/2000/svg">
+          <!-- Top Loop curving up to JOURNEY with properly aligned arrowhead -->
+          <path d="M 430 180 C 420 80, 520 60, 560 120 C 580 150, 550 180, 530 155" fill="none" stroke="#111111"
+            stroke-linecap="round" stroke-width="5.5"></path>
+          <polygon fill="#111111" points="539.7,151.1 519.4,141.7 524.1,163.6"></polygon>
+
+          <!-- Connecting line sweeping down behind the train and curving left towards CTA -->
+          <path d="M 545 170 C 650 240, 780 280, 730 380 C 680 470, 480 430, 360 440 C 290 445, 230 430, 185 435"
+            fill="none" stroke="#111111" stroke-linecap="round" stroke-width="5.5"></path>
+          <!-- Bottom Arrowhead pointing left towards the CTA button -->
+          <polygon fill="#111111" points="195,425 175,435 195,445"></polygon>
+        </svg>
+      </div>
+
+      <!-- Bullet Train Illustration -->
+      <div class="relative mt-[-30px] sm:mt-[-60px] lg:mt-[-80px] z-15 w-full flex justify-center">
+        <div class="relative w-full max-w-2xl rounded-2xl overflow-hidden mix-blend-multiply">
+          <img alt="Modern transit illustration"
+            class="w-full h-auto object-contain filter contrast-125"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAucZcjXuJ4LOgYg44WsoT9vS8Qzywy9qA7U8Q9S5qORT164n3tSKqAYeNskq0T2b2iXa8RQMesFS3XoN_uC2Wlll4LcVUk_jAV_78wxro1w31C2jDV55sB_POdhOdp-o4ERbhlBU4h9M6yvXx7q1uNI8ETMHgM6DVcVkRVPqI4lhWFayDZWoeZCwZJ-Do5nTWEMx98OEp0-Q1izAizmXO7jkDzuDO893d1wakrZG2b7hjiGBce3B4">
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

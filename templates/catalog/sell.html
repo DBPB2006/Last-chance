@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if not is_kyc_verified %}Identity Verification Required{% else %}List a Ticket for Resale{% endif %} &bull; lastchance{% endblock %}
+
+{% block content %}
+<div class="w-full px-4 sm:px-6 lg:px-8 py-6">
+  {% if not is_kyc_verified %}
+  <!-- DigiLocker KYC Verification Gate -->
+  <div class="bg-surface-container-lowest rounded-3xl p-8 sm:p-10 border border-surface-container-high shadow-sm max-w-xl mx-auto text-center">
+    <div class="w-16 h-16 rounded-2xl bg-primary-container/15 text-primary-container flex items-center justify-center mx-auto mb-5">
+      <span class="material-symbols-outlined text-[32px]">verified_user</span>
+    </div>
+    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-container text-on-primary font-label-ticket text-label-ticket uppercase tracking-wider shadow-sm mb-3">
+      <span class="material-symbols-outlined text-[16px]">verified</span>
+      Identity Verification
+    </div>
+    <h1 class="font-headline-md text-2xl sm:text-3xl font-extrabold text-on-surface tracking-tight mb-2">
+      Identity Verification Required
+    </h1>
+    <p class="font-body-md text-body-md text-secondary leading-relaxed max-w-md mx-auto mb-8">
+      To sell tickets safely, we require verified identity through DigiLocker. This protects buyers and sellers and ensures all tickets are 100% genuine.
+    </p>
+    <div class="flex items-center justify-center gap-3 flex-wrap">
+      <a href="{% url 'verification' %}"
+        class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary-container text-on-primary hover:bg-primary font-label-ticket text-label-ticket tracking-wider uppercase shadow-md transition-transform active:scale-95">
+        <span class="material-symbols-outlined text-[18px]">verified</span>
+        <span>Verify with DigiLocker</span>
+      </a>
+      <a href="{% url 'explore' %}"
+        class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-ticket text-label-ticket tracking-wider uppercase transition-colors">
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+        <span>Return to Marketplace</span>
+      </a>
+    </div>
+  </div>
+  {% elif not eligible_tickets %}
+  <!-- Empty Vault Gate -->
+  <div class="bg-surface-container-lowest rounded-3xl p-8 sm:p-10 border border-surface-container-high shadow-sm max-w-xl mx-auto text-center">
+    <div class="w-16 h-16 rounded-2xl bg-surface-container-high text-secondary flex items-center justify-center mx-auto mb-5">
+      <span class="material-symbols-outlined text-[32px]">confirmation_number</span>
+    </div>
+    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high text-secondary font-label-ticket text-label-ticket uppercase tracking-wider mb-3">
+      <span class="material-symbols-outlined text-[16px]">inventory_2</span>
+      No Tickets Found
+    </div>
+    <h1 class="font-headline-md text-2xl sm:text-3xl font-extrabold text-on-surface tracking-tight mb-2">
+      No Tickets Available to Sell
+    </h1>
+    <p class="font-body-md text-body-md text-secondary leading-relaxed max-w-md mx-auto mb-8">
+      You do not have any active tickets for upcoming events in your vault. When you purchase or hold tickets, you can list them here anytime.
+    </p>
+    <div class="flex items-center justify-center gap-3 flex-wrap">
+      <a href="{% url 'explore' %}"
+        class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary-container text-on-primary hover:bg-primary font-label-ticket text-label-ticket tracking-wider uppercase shadow-md transition-transform active:scale-95">
+        <span class="material-symbols-outlined text-[18px]">search</span>
+        <span>Explore Marketplace</span>
+      </a>
+      <a href="{% url 'ticket-vault' %}"
+        class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-ticket text-label-ticket tracking-wider uppercase transition-colors">
+        <span class="material-symbols-outlined text-[18px]">wallet</span>
+        <span>Open Ticket Vault</span>
+      </a>
+    </div>
+  </div>
+  {% else %}
+  <!-- Header Status Area with Verified Seller & Subtitle -->
+  <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+    <div>
+      <div class="flex flex-wrap items-center gap-2.5 mb-2">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-container text-on-primary font-label-ticket text-label-ticket uppercase tracking-wider shadow-sm">
+          <span class="material-symbols-outlined text-[16px]">verified</span>
+          <span>Verified Seller</span>
+        </span>
+        <span class="font-code-barcode text-code-barcode text-secondary uppercase tracking-widest font-mono">
+          {{ user.verified_legal_name|default:user.username }} &bull; ID: LC-IND-{{ user.id|stringformat:"06d" }}
+        </span>
+      </div>
+      <h1 class="font-headline-lg text-2xl sm:text-3xl lg:text-4xl text-on-surface tracking-tight font-extrabold font-display">
+        List a Ticket for <span class="text-primary-container">Resale</span>
+      </h1>
+      <p class="font-body-md text-body-md text-secondary mt-1 max-w-2xl">
+        Select a ticket from your vault. When someone buys it, you will automatically receive 80% of the ticket price directly in your wallet.
+      </p>
+    </div>
+    <div class="flex items-center gap-3 shrink-0">
+      <a href="{% url 'my-listings' %}"
+        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-ticket text-label-ticket tracking-wider uppercase transition-colors">
+        <span class="material-symbols-outlined text-[18px]">history</span>
+        <span>My Listings</span>
+      </a>
+      <a href="{% url 'ticket-vault' %}"
+        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface hover:bg-on-surface font-label-ticket text-label-ticket tracking-wider uppercase transition-colors shadow-sm">
+        <span class="material-symbols-outlined text-[18px]">wallet</span>
+        <span>Ticket Vault</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Main Two-Column Resale Layout -->
+  <form method="post" action="{% url 'sell-ticket' %}">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+      <!-- Left Column: Step 1 Ticket Inventory Selection (7 cols in lg, 8 cols in xl) -->
+      <div class="lg:col-span-7 xl:col-span-8 bg-surface-container-lowest rounded-3xl p-6 sm:p-7 shadow-sm border border-surface-container-high">
+        <div class="flex items-center justify-between pb-4 mb-5 border-b border-surface-container-high">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-inverse-surface text-inverse-on-surface flex items-center justify-center font-bold text-xs">1</span>
+              <h2 class="font-headline-md text-lg sm:text-xl text-on-surface font-extrabold tracking-tight">
+                Select Ticket to Sell
+              </h2>
+            </div>
+            <p class="font-body-sm text-body-sm text-secondary mt-1">
+              Choose the ticket you want to put up for sale
+            </p>
+          </div>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-container/15 text-primary-container font-label-ticket text-label-ticket uppercase tracking-wider border border-primary-container/30">
+            <span class="material-symbols-outlined text-[16px]">confirmation_number</span>
+            <span>{{ eligible_tickets|length }} Ticket{{ eligible_tickets|length|pluralize }} Available</span>
+          </span>
+        </div>
+
+        <div class="space-y-3.5">
+          {% for t in eligible_tickets %}
+          <label class="block cursor-pointer group">
+            <input type="radio" name="ticket_id" value="{{ t.id }}"
+              data-facevalue="{{ t.face_value }}"
+              data-payout="{{ t.payout_amount }}"
+              data-buyerprice="{{ t.buyer_price }}"
+              {% if selected_ticket_id == t.id|stringformat:"s" or not selected_ticket_id and forloop.first %}checked{% endif %}
+              class="sr-only ticket-radio-input"
+              onchange="updateTicketSelection(this)">
+            <div
+              class="ticket-select-card rounded-2xl border-2 border-surface-container-high bg-surface-container-low/40 hover:bg-surface-container-low hover:border-outline-variant p-4 sm:p-5 transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              id="card-{{ t.id }}">
+
+              <div class="flex items-start gap-3.5 flex-1 min-w-0">
+                <!-- Category Icon Container -->
+                <div class="w-11 h-11 rounded-xl bg-surface-container-high text-on-surface flex items-center justify-center shrink-0 group-hover:bg-primary-container group-hover:text-on-primary transition-colors">
+                  <span class="material-symbols-outlined text-[24px]">
+                    {% if t.category == 'train' %}train
+                    {% elif t.category == 'flight' %}flight_takeoff
+                    {% elif t.category == 'movie' %}movie
+                    {% elif t.category == 'concert' or t.category == 'festival' %}music_note
+                    {% elif t.category == 'sports' %}sports_cricket
+                    {% else %}confirmation_number{% endif %}
+                  </span>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1 flex-wrap">
+                    <span class="font-code-barcode text-code-barcode uppercase tracking-wider text-secondary font-mono">
+                      {{ t.provider_name }} &bull; #{{ t.ticket_ref }}
+                    </span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-surface-container-high text-on-surface">
+                      {{ t.category }}
+                    </span>
+                  </div>
+                  <h3 class="font-headline-md text-base sm:text-lg font-extrabold text-on-surface leading-tight truncate">
+                    {{ t.title }}
+                  </h3>
+                  <div class="font-body-sm text-body-sm text-secondary flex items-center gap-2 flex-wrap mt-1">
+                    <span>{{ t.venue_or_route }}</span>
+                    <span class="text-outline-variant">&bull;</span>
+                    <span class="font-bold text-on-surface bg-surface-container-high px-2 py-0.5 rounded-md text-xs">
+                      {{ t.seat_or_coach }}
+                    </span>
+                    <span class="text-outline-variant">&bull;</span>
+                    <span class="text-secondary text-xs">{{ t.formatted_date }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right side: Price & Payout -->
+              <div class="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-3 sm:pt-0 border-surface-container-high shrink-0 text-right">
+                <div>
+                  <span class="font-code-barcode text-code-barcode text-secondary uppercase block">
+                    Original Price: ₹{{ t.face_value }}
+                  </span>
+                  <span class="font-label-ticket text-label-ticket text-tertiary uppercase tracking-wider font-bold block mt-0.5">
+                    Your Payout (80%)
+                  </span>
+                </div>
+                <div class="font-headline-md text-xl sm:text-2xl font-extrabold text-primary-container font-tech mt-0.5">
+                  ₹{{ t.payout_amount }}
+                </div>
+              </div>
+
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Right Column: Step 2 Payout & Confirmation (5 cols in lg, 4 cols in xl sticky sidebar) -->
+      <div class="lg:col-span-5 xl:col-span-4 sticky top-28 space-y-6">
+        <!-- Charcoal Card -->
+        <div class="dark-console-card p-6 sm:p-7 rounded-3xl bg-inverse-surface text-inverse-on-surface shadow-md flex flex-col justify-between border border-white/10">
+          <div>
+            <!-- Top Strip -->
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-surface-variant/20">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary flex items-center justify-center font-bold">
+                  <span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+                </div>
+                <div>
+                  <span class="font-code-barcode text-code-barcode text-primary-container uppercase tracking-wider font-mono block">
+                    INSTANT PAYOUT
+                  </span>
+                  <h2 class="font-headline-md text-lg font-extrabold text-surface-container-lowest leading-tight">
+                    Resale Payout Summary
+                  </h2>
+                </div>
+              </div>
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 text-inverse-on-surface font-label-ticket text-label-ticket uppercase tracking-wider">
+                <span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span> Instant
+              </span>
+            </div>
+
+            <p class="font-body-sm text-body-sm text-secondary-fixed mb-5">
+              Pricing is automated so you get a clear and fair return. Once a buyer purchases your ticket, your payout is credited directly to your wallet.
+            </p>
+
+            <!-- Calculation Breakdown Table -->
+            <div class="space-y-3 pb-5 border-b border-surface-variant/20 text-xs">
+              <div class="flex justify-between items-center text-secondary-fixed">
+                <span class="font-body-sm">Original Ticket Price</span>
+                <strong id="display-face-value" class="font-tech font-bold text-surface-container-lowest text-sm">₹0.00</strong>
+              </div>
+              <div class="flex justify-between items-center text-secondary-fixed">
+                <span class="font-body-sm">Your Payout Rate</span>
+                <span class="font-label-ticket text-label-ticket text-tertiary-fixed bg-tertiary-container/30 px-2 py-0.5 rounded-full font-bold">
+                  80% of Ticket Price
+                </span>
+              </div>
+              <div class="flex justify-between items-center text-secondary-fixed">
+                <span class="font-body-sm">Price for Buyers</span>
+                <span id="display-buyer-price" class="font-tech font-bold text-surface-container-highest">₹0.00</span>
+              </div>
+            </div>
+
+            <!-- Net Payout Callout -->
+            <div class="py-5 flex justify-between items-end">
+              <div>
+                <div class="font-headline-sm text-sm sm:text-base font-extrabold text-surface-container-lowest">
+                  Amount You Will Receive
+                </div>
+                <div class="font-body-sm text-body-sm text-secondary-fixed mt-0.5 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px] text-tertiary-fixed">shield</span>
+                  <span>Credited directly to wallet on sale</span>
+                </div>
+              </div>
+              <div class="text-right shrink-0">
+                <div id="display-payout-amount" class="font-tech font-black text-2xl sm:text-3xl text-primary-container leading-none">
+                  ₹0.00
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hidden input for automated asking_price calculation -->
+          <input type="hidden" id="asking_price" name="asking_price" value="">
+
+          <!-- Submit CTA Button -->
+          <button type="submit" id="submit-payout-btn"
+            class="w-full py-3.5 px-5 rounded-xl bg-primary-container text-on-primary hover:bg-primary font-label-ticket text-label-ticket uppercase tracking-wider font-extrabold shadow-[0_4px_16px_rgba(255,102,0,0.35)] transition-all duration-150 cursor-pointer active:scale-95 flex items-center justify-center gap-2 border-0">
+            <span class="material-symbols-outlined text-[18px]">sell</span>
+            <span>Confirm &amp; List Ticket</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function updateTicketSelection(radio) {
+    document.querySelectorAll('.ticket-select-card').forEach(function (el) {
+      el.classList.remove('border-primary-container', 'bg-primary-container/5', 'ring-2', 'ring-primary-container/20', 'selected');
+      el.classList.add('border-surface-container-high', 'bg-surface-container-low/40');
+    });
+
+    var card = document.getElementById('card-' + radio.value);
+    if (card) {
+      card.classList.remove('border-surface-container-high', 'bg-surface-container-low/40');
+      card.classList.add('border-primary-container', 'bg-primary-container/5', 'ring-2', 'ring-primary-container/20', 'selected');
+    }
+
+    var faceVal = parseFloat(radio.getAttribute('data-facevalue')) || 0;
+    var payoutVal = radio.getAttribute('data-payout') || (faceVal * 0.80).toFixed(2);
+    var buyerPriceVal = radio.getAttribute('data-buyerprice') || (faceVal * 1.20).toFixed(2);
+
+    var displayFace = document.getElementById('display-face-value');
+    var displayPayout = document.getElementById('display-payout-amount');
+    var displayBuyer = document.getElementById('display-buyer-price');
+    var askingInput = document.getElementById('asking_price');
+    var submitBtn = document.getElementById('submit-payout-btn');
+
+    if (displayFace) displayFace.textContent = '₹' + faceVal.toFixed(2);
+    if (displayPayout) displayPayout.textContent = '₹' + payoutVal;
+    if (displayBuyer) displayBuyer.textContent = '₹' + parseFloat(buyerPriceVal).toFixed(2);
+    if (askingInput) askingInput.value = payoutVal;
+    if (submitBtn) {
+      submitBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">sell</span><span>Confirm &amp; List Ticket (₹' + payoutVal + ')</span>';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var checkedRadio = document.querySelector('input.ticket-radio-input:checked');
+    if (checkedRadio) {
+      updateTicketSelection(checkedRadio);
+    }
+  });
+</script>
+{% endblock %}

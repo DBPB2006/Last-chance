@@ -1,0 +1,574 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Resale Listings (Seller Desk) &bull; lastchance{% endblock %}
+
+{% block content %}
+<style>
+  .ticket-notch-top {
+    mask-image: radial-gradient(circle at 100% 50%, transparent 12px, black 13px);
+  }
+
+  .ticket-notch-bottom {
+    mask-image: radial-gradient(circle at 0% 50%, transparent 12px, black 13px);
+  }
+
+  .perforation-seam {
+    background-image: repeating-linear-gradient(to bottom, #d5c8be 0px, #d5c8be 6px, transparent 6px, transparent 12px);
+    width: 2px;
+  }
+</style>
+
+<div class="flex flex-col w-full pb-20 font-sans">
+  <div class="relative w-full px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- =========================================================================
+         SELLER DESK HERO & METRIC HUD BAR
+         ========================================================================= -->
+    <div class="flex flex-col gap-6 mb-8">
+      <!-- Large Kinetic Header & Primary Call to Action -->
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2">
+        <div class="flex flex-col gap-1.5 max-w-2xl">
+
+          <h1 class="text-3xl sm:text-4xl font-extrabold text-on-surface tracking-tight font-display">
+            My Resale <span class="text-primary-container">Listings</span>
+          </h1>
+          <p class="text-sm sm:text-base text-secondary font-normal leading-relaxed">
+            Manage your listed, reserved, and completed ticket sales with fair price protection and secure direct bank
+            payout.
+          </p>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <a href="{% url 'sell-ticket' %}"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-container text-white font-display text-xs uppercase tracking-wider font-bold shadow-[0_2px_10px_rgba(255,102,0,0.25)] hover:bg-primary transition-all active:translate-y-0.5 cursor-pointer no-underline">
+            <span class="material-symbols-outlined text-[18px]">add_circle</span>
+            <span>+ List Another Ticket</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================================
+         INTERACTIVE STATUS TABS
+         ========================================================================= -->
+    <div class="flex items-center justify-between gap-4 mb-8 overflow-x-auto pb-2" id="listing-filter-row">
+      <div
+        class="flex items-center gap-2 p-1.5 rounded-2xl bg-surface-container-low shrink-0 border border-surface-container-high/60">
+        <button type="button"
+          class="px-4 py-2 rounded-xl bg-inverse-surface text-inverse-on-surface font-label-ticket text-xs font-bold uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+          id="tab-all" onclick="filterListings('all')">
+          All Listings ({{ listings|length }})
+        </button>
+        <button type="button"
+          class="px-4 py-2 rounded-xl text-secondary hover:text-on-surface font-label-ticket text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+          id="tab-active" onclick="filterListings('active')">
+          Active ({{ active_count|default:0 }})
+        </button>
+        <button type="button"
+          class="px-4 py-2 rounded-xl text-secondary hover:text-on-surface font-label-ticket text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+          id="tab-reserved" onclick="filterListings('reserved')">
+          Reserved ({{ reserved_count|default:0 }})
+        </button>
+        <button type="button"
+          class="px-4 py-2 rounded-xl text-secondary hover:text-on-surface font-label-ticket text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+          id="tab-sold" onclick="filterListings('sold')">
+          Completed &amp; Sold ({{ sold_count|default:0 }})
+        </button>
+      </div>
+    </div>
+
+    <!-- =========================================================================
+         KINETIC TICKET LISTINGS STACK
+         ========================================================================= -->
+    {% if not listings %}
+    <!-- Empty State When No Listings Exist in DB -->
+    <div
+      class="flex flex-col items-center justify-center text-center p-12 bg-surface-container-lowest rounded-2xl border border-surface-container-high shadow-sm my-6">
+      <div
+        class="w-16 h-16 rounded-2xl bg-surface-container-low flex items-center justify-center text-secondary mb-4 border border-surface-container-high">
+        <span class="material-symbols-outlined text-[32px] text-primary-container">confirmation_number</span>
+      </div>
+      <h3 class="text-xl font-black font-display text-on-surface mb-2">No listings created yet</h3>
+      <p class="text-sm text-secondary max-w-md font-medium mb-6">
+        When you list eligible tickets for resale, their status, active buyer reservations, and payouts will appear
+        here.
+      </p>
+      <a href="{% url 'sell-ticket' %}"
+        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-container text-white font-display text-xs uppercase tracking-wider font-extrabold shadow-sm hover:bg-primary transition-all no-underline">
+        <span class="material-symbols-outlined text-[18px]">add_circle</span>
+        <span>List A Spare Ticket Now</span>
+      </a>
+    </div>
+    {% else %}
+    <div class="flex flex-col gap-6" id="listings-container">
+      {% for item in listings %}
+      <article
+        class="listing-item bg-surface-container-lowest rounded-2xl border border-surface-container-high hover:border-surface-container-highest shadow-sm transition-all overflow-hidden flex flex-col lg:flex-row relative group"
+        data-status="{{ item.status|lower }}">
+        <!-- Main Left Ticket Body -->
+        <div class="flex-1 flex flex-col justify-between">
+          <!-- Header Banner -->
+          <div
+            class="{% if item.status == 'RESERVED' %}bg-inverse-surface text-inverse-on-surface{% elif item.status == 'SOLD' %}bg-gradient-to-tr from-primary to-primary-container text-white{% else %}bg-primary-container text-white{% endif %} px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-black/20 flex items-center justify-center text-white shrink-0">
+                <span class="material-symbols-outlined text-[20px]">
+                  {% if item.ticket.event.category == 'train' %}train{% elif item.ticket.event.category == 'flight' %}flight{% elif item.ticket.event.category == 'movie' %}movie{% elif item.ticket.event.category == 'sports' %}sports_cricket{% elif item.ticket.event.category == 'concert' or item.ticket.event.category == 'festival' %}festival{% else %}confirmation_number{% endif %}
+                </span>
+              </div>
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span
+                    class="text-[10px] font-mono uppercase tracking-widest font-bold px-2 py-0.5 rounded bg-black/25 text-white">
+                    {{ item.ticket.event.category|default:'Ticket' }} Pass
+                  </span>
+                  <span class="text-xs font-mono opacity-90 truncate max-w-[200px]">Ref: {{ item.ticket.ticket_ref }}</span>
+                </div>
+                <h2 class="text-lg sm:text-xl font-bold font-display text-white tracking-tight">
+                  {{ item.ticket.event.title }}
+                </h2>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              {% if item.status == 'ACTIVE' %}
+              <span
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300/80 shadow-[0_0_12px_rgba(16,185,129,0.25)] font-mono text-[11px] font-bold">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping"></span>Active &amp; On Sale
+              </span>
+              <span class="text-[11px] font-mono text-white/80 hidden sm:inline">Listed {{ item.created_at|timesince }}
+                ago</span>
+              {% elif item.status == 'RESERVED' %}
+              <span
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 font-mono text-[11px] font-bold border border-amber-400/40 shadow-[0_0_12px_rgba(245,158,11,0.25)]">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>Buyer Checking Out
+              </span>
+              <div
+                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 text-white font-mono text-xs">
+                <span class="material-symbols-outlined text-[14px] text-brand-amber">timer</span>
+                <span>Reserved in Checkout</span>
+              </div>
+              {% elif item.status == 'SOLD' %}
+              <span
+                class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-900/35 text-white font-mono text-[11px] font-bold border border-white/40 shadow-[0_0_12px_rgba(255,255,255,0.18)]">
+                <span class="material-symbols-outlined text-[14px] text-emerald-300">done_all</span>Sold &amp; Completed
+              </span>
+              <span class="text-[11px] font-mono text-white/80 hidden sm:inline">Settled on {{ item.updated_at|date:"M d, Y" }}</span>
+              {% else %}
+              <span
+                class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 font-mono">
+                {{ item.status }}
+              </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Ticket Body Details -->
+          <div class="p-6 lg:p-7 flex flex-col gap-5">
+            {% if item.transit %}
+            <!-- Transit Route Manifest (Train / Flight) -->
+            <div
+              class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-surface-container-low border border-surface-container-high/60">
+              <div class="flex flex-col">
+                <span class="text-[10px] font-mono text-secondary uppercase tracking-widest font-semibold">ORIGIN</span>
+                <span class="text-2xl font-black font-display text-on-surface">{{ item.transit.orig_code }}</span>
+                <span class="text-xs font-semibold text-secondary flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px] text-primary-container">
+                    {% if item.ticket.event.category == 'train' %}train{% else %}flight_takeoff{% endif %}
+                  </span>
+                  {{ item.transit.orig_name }}
+                </span>
+              </div>
+              <div class="flex flex-col items-center justify-center px-4">
+                <span
+                  class="text-[10px] font-mono text-primary-container font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-primary-fixed/40 mb-1">
+                  {{ item.transit.gate_or_platform|default:'Direct Transit' }}
+                </span>
+                <div class="flex items-center gap-1 text-secondary font-mono text-xs">
+                  <span class="w-2 h-2 rounded-full bg-primary-container"></span>
+                  <span class="w-16 h-0.5 bg-outline-variant"></span>
+                  <span class="material-symbols-outlined text-[16px] text-primary-container">
+                    {% if item.ticket.event.category == 'train' %}arrow_forward{% else %}flight{% endif %}
+                  </span>
+                  <span class="w-16 h-0.5 bg-outline-variant"></span>
+                  <span class="w-2 h-2 rounded-full bg-on-surface"></span>
+                </div>
+                <span class="text-[10px] font-mono text-secondary mt-1">
+                  DEP: {{ item.transit.dep_time|default:item.ticket.event.start_time|date:"h:i A" }} &bull; {{ item.transit.duration_str|default:'Direct' }}
+                </span>
+              </div>
+              <div class="flex flex-col sm:items-end">
+                <span
+                  class="text-[10px] font-mono text-secondary uppercase tracking-widest font-semibold">DESTINATION</span>
+                <span class="text-2xl font-black font-display text-on-surface">{{ item.transit.dest_code }}</span>
+                <span class="text-xs font-semibold text-secondary flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">location_on</span>
+                  {{ item.transit.dest_name }}
+                </span>
+              </div>
+            </div>
+            {% else %}
+            <!-- Non-Transit Event Manifest (Movie / Concert / Sports) -->
+            <div
+              class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-surface-container-low border border-surface-container-high/60">
+              <div class="flex flex-col">
+                <span class="text-[10px] font-mono text-secondary uppercase tracking-widest font-semibold">VENUE /
+                  LOCATION</span>
+                <span class="text-xl font-black font-display text-on-surface">{{ item.ticket.event.venue_or_route }}</span>
+                <span class="text-xs font-semibold text-secondary flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px] text-primary-container">
+                    {% if item.ticket.event.category == 'movie' %}movie{% elif item.ticket.event.category == 'sports' %}stadium{% else %}location_on{% endif %}
+                  </span>
+                  {{ item.ticket.event.provider.name }}
+                </span>
+              </div>
+              <div class="flex flex-col sm:items-center justify-center px-2 text-center">
+                <span
+                  class="text-[10px] font-mono text-primary font-bold uppercase tracking-wider px-2.5 py-1 rounded bg-primary-fixed mb-2 max-w-xs truncate" title="{{ item.ticket.seat_or_coach }}">
+                  {{ item.ticket.seat_or_coach }}
+                </span>
+                <div class="flex items-center gap-1 text-emerald-600 font-mono text-xs">
+                  <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                  <span class="w-12 sm:w-16 h-0.5 bg-emerald-600"></span>
+                  <span class="material-symbols-outlined text-[16px]">verified</span>
+                  <span class="w-12 sm:w-16 h-0.5 bg-emerald-600"></span>
+                  <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                </div>
+                <span class="text-[10px] font-mono text-emerald-700 font-bold mt-1.5 whitespace-nowrap">Verified Ticket Pass</span>
+              </div>
+              <div class="flex flex-col sm:items-end">
+                <span class="text-[10px] font-mono text-secondary uppercase tracking-widest font-semibold">EVENT
+                  DATE</span>
+                <span class="text-xl font-black font-display text-on-surface">{{ item.ticket.event.start_time|date:"M d, Y" }}</span>
+                <span class="text-xs font-semibold text-secondary flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">schedule</span>
+                  {{ item.ticket.event.start_time|date:"h:i A" }}
+                </span>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- 4-Grid Metadata Matrix -->
+            <div
+              class="grid grid-cols-2 sm:grid-cols-4 gap-0 rounded-xl bg-surface-container-low/70 border border-surface-container-high/80 divide-y sm:divide-y-0 sm:divide-x divide-surface-container-high/90 overflow-hidden">
+              <div class="p-3.5 flex flex-col justify-between">
+                <span
+                  class="block text-[10px] font-mono font-semibold uppercase tracking-wider text-secondary/80">Schedule
+                  Date</span>
+                <div class="mt-1">
+                  <span class="text-sm font-bold font-route text-on-surface block">{{ item.ticket.event.start_time|date:"M d, Y" }}</span>
+                  <span class="block text-xs font-mono text-primary-container font-semibold">{{ item.ticket.event.start_time|date:"h:i A" }}</span>
+                </div>
+              </div>
+              <div class="p-3.5 flex flex-col justify-between">
+                <span class="block text-[10px] font-mono font-semibold uppercase tracking-wider text-secondary/80">Seat
+                  / Tier</span>
+                <div class="mt-1">
+                  <span class="text-sm font-bold font-route text-on-surface block truncate">{{ item.ticket.seat_or_coach }}</span>
+                  <span class="block text-xs font-mono text-secondary">Assigned Seat</span>
+                </div>
+              </div>
+              <div class="p-3.5 flex flex-col justify-between">
+                <span
+                  class="block text-[10px] font-mono font-semibold uppercase tracking-wider text-secondary/80">Transfer
+                  Status</span>
+                <div class="mt-1">
+                  {% if item.status == 'ACTIVE' %}
+                  <span class="text-sm font-bold font-route text-emerald-700 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[15px]">verified</span>Official Name Transfer
+                  </span>
+                  <span class="block text-xs font-mono text-secondary">Included</span>
+                  {% elif item.status == 'RESERVED' %}
+                  <span class="text-sm font-bold font-route text-brand-amber flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[15px]">lock_clock</span>Buyer in Checkout
+                  </span>
+                  <span class="block text-xs font-mono text-secondary">Payment Hold</span>
+                  {% elif item.status == 'SOLD' %}
+                  <span class="text-sm font-bold font-route text-emerald-700 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[15px]">account_balance</span>Paid to Wallet
+                  </span>
+                  <span class="block text-xs font-mono text-secondary">Instant Transfer</span>
+                  {% else %}
+                  <span class="text-sm font-bold font-route text-secondary">{{ item.status }}</span>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="p-3.5 flex flex-col justify-between">
+                <span
+                  class="block text-[10px] font-mono font-semibold uppercase tracking-wider text-secondary/80">Ticket
+                  ID</span>
+                <div class="mt-1">
+                  <span class="text-xs font-mono text-on-surface font-bold break-all block">{{ item.ticket.ticket_ref }}</span>
+                  <span class="block text-[10px] font-mono text-emerald-700 font-bold">VERIFIED ID</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reserved Alert Box (when RESERVED) -->
+            {% if item.status == 'RESERVED' %}
+            <div
+              class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-brand-amber text-[20px]">lock_clock</span>
+                <p class="text-xs text-secondary font-normal m-0">
+                  A buyer is currently confirming checkout for this pass. ₹{{ item.asking_price }} will be credited
+                  directly to your wallet once completed.
+                </p>
+              </div>
+              <span
+                class="text-[11px] font-mono font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 uppercase whitespace-nowrap">
+                Payment In Hold
+              </span>
+            </div>
+            {% endif %}
+
+            <!-- Action CTAs Row -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-surface-container-high">
+              <div class="flex items-center gap-2 text-xs text-secondary">
+                {% if item.status == 'ACTIVE' %}
+                <span class="inline-flex items-center gap-1 text-emerald-700 font-mono font-semibold">
+                  <span class="material-symbols-outlined text-[16px]">verified</span>
+                  DigiLocker KYC Protected
+                </span>
+                {% elif item.status == 'SOLD' %}
+                <span class="inline-flex items-center gap-1.5 text-xs text-secondary">
+                  <span class="material-symbols-outlined text-emerald-600 text-[16px]">verified</span>
+                  <span>₹{{ item.asking_price }} credited to your <strong class="text-on-surface font-bold">lastchance
+                      Wallet</strong></span>
+                </span>
+                {% elif item.status == 'RESERVED' %}
+                <span class="inline-flex items-center gap-1.5 text-xs text-secondary">
+                  <span class="material-symbols-outlined text-brand-amber text-[16px]">timer</span>
+                  <span>Payment in progress &bull; Automatic transfer on confirmation</span>
+                </span>
+                {% endif %}
+              </div>
+
+              <div class="flex items-center gap-2.5">
+                {% if item.status == 'ACTIVE' %}
+                <form method="post" action="{% url 'withdraw-listing' item.id %}" class="inline m-0">
+                  {% csrf_token %}
+                  <button type="submit"
+                    class="px-3.5 py-1.5 rounded-lg border border-surface-container-high bg-white hover:bg-red-50 text-error hover:border-red-200 text-xs font-label-ticket font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                    onclick="return confirm('Are you sure you want to withdraw this ticket from the marketplace? It will be returned to your active vault.');">
+                    Withdraw Listing
+                  </button>
+                </form>
+                <a class="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-inverse-surface text-inverse-on-surface hover:bg-primary-container transition-all text-xs font-label-ticket font-bold uppercase tracking-wider shadow-xs no-underline"
+                  href="{% url 'listing-detail' item.ticket.event.id %}">
+                  <span>View Listing</span>
+                  <span class="material-symbols-outlined text-[15px]">open_in_new</span>
+                </a>
+                {% elif item.status == 'SOLD' %}
+                <a href="{% url 'wallet' %}"
+                  class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg border border-surface-container-high bg-white hover:bg-surface-container-low text-on-surface text-xs font-label-ticket font-bold uppercase tracking-wider transition-colors cursor-pointer no-underline">
+                  <span class="material-symbols-outlined text-[15px]">account_balance_wallet</span>
+                  <span>View in Wallet</span>
+                </a>
+                {% elif item.status == 'RESERVED' %}
+                <a class="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-inverse-surface text-inverse-on-surface hover:bg-primary-container transition-all text-xs font-label-ticket font-bold uppercase tracking-wider shadow-xs no-underline"
+                  href="{% url 'listing-detail' item.ticket.event.id %}">
+                  <span>View Listing</span>
+                  <span class="material-symbols-outlined text-[15px]">open_in_new</span>
+                </a>
+                {% endif %}
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Perforated Tear Line with Concave Radial Cutouts -->
+        <div
+          class="relative flex lg:flex-col items-center justify-between py-2 lg:py-4 px-4 lg:px-0 bg-surface-container-lowest">
+          <div
+            class="w-5 h-5 rounded-full bg-surface border border-surface-container-high absolute -top-2.5 lg:-top-2.5 lg:-left-2.5 z-10 shadow-inner">
+          </div>
+          <div
+            class="w-full lg:w-0 lg:h-full h-0 border-b lg:border-b-0 lg:border-r border-dashed border-surface-container-high">
+          </div>
+          <div
+            class="w-5 h-5 rounded-full bg-surface border border-surface-container-high absolute -bottom-2.5 lg:-bottom-2.5 lg:-left-2.5 z-10 shadow-inner">
+          </div>
+        </div>
+
+        <!-- Right Column Price Stub & Barcode -->
+        <div
+          class="w-full lg:w-64 bg-white p-6 flex flex-col justify-between gap-5 shrink-0 border-t lg:border-t-0 lg:border-l border-surface-container-high relative">
+          <div class="flex flex-col gap-4">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-label-ticket font-bold uppercase tracking-wider text-secondary">Original
+                  Price</span>
+                <span class="text-xs font-mono text-slate-500 line-through">₹{{ item.ticket.face_value }}</span>
+              </div>
+              <div class="flex flex-col mb-1">
+                <span class="text-[11px] font-label-ticket font-bold uppercase tracking-wider text-secondary">Selling
+                  Price</span>
+                <div class="flex items-baseline gap-2 mt-0.5">
+                  <span class="text-3xl font-extrabold font-display text-on-surface tracking-tight">₹{{ item.asking_price }}</span>
+                  <span
+                    class="text-[10px] font-mono text-white bg-primary-container font-bold px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider">OFFICIAL
+                    PRICE</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payout Card -->
+            <div
+              class="p-3.5 rounded-xl bg-surface-container-low border border-surface-container-high/80 text-xs font-mono shadow-xs flex flex-col gap-1.5">
+              <div class="flex justify-between items-center">
+                <span class="text-secondary text-[11px] uppercase tracking-wider font-bold">Your Payout:</span>
+                <span class="text-base font-black text-emerald-700 font-display">₹{{ item.asking_price }}</span>
+              </div>
+              <div class="h-0.5 w-full bg-surface-container-high/60 my-0.5"></div>
+              <div class="flex justify-between items-center text-[11px]">
+                <span class="text-secondary">Service Fee:</span>
+                <span
+                  class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">₹0
+                  (Free)</span>
+              </div>
+              <div class="flex justify-between items-center text-[11px]">
+                <span class="text-secondary">Payout Method:</span>
+                <span class="text-on-surface font-semibold">Direct Wallet/Bank</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Machine Barcode -->
+          <div class="flex flex-col items-center gap-2 pt-3 border-t border-dashed border-surface-container-high/90">
+            <div
+              class="w-full flex flex-col items-center justify-center py-2 px-3 bg-surface-container-lowest rounded-lg border border-surface-container-high/70 shadow-xs">
+              <svg class="w-full h-7 text-on-surface tracking-widest" fill="currentColor" viewBox="0 0 140 28">
+                <path
+                  d="M2 2h3v24H2zM8 2h2v24H8zM12 2h4v24h-4zM18 2h2v24h-2zM23 2h5v24h-5zM30 2h2v24h-2zM34 2h4v24h-4zM40 2h3v24h-3zM45 2h2v24h-2zM50 2h5v24h-5zM58 2h2v24h-2zM63 2h4v24h-4zM70 2h3v24h-3zM75 2h2v24h-2zM79 2h5v24h-5zM86 2h2v24h-2zM90 2h4v24h-4zM96 2h3v24h-3zM102 2h4v24h-4zM108 2h2v24h-2zM113 2h5v24h-5zM120 2h2v24h-2zM125 2h4v24h-4zM131 2h3v24h-3zM136 2h2v24h-2z">
+                </path>
+              </svg>
+              <span
+                class="text-[9px] font-mono tracking-[0.22em] text-secondary/70 mt-1 uppercase select-all truncate max-w-full">
+                {{ item.ticket.ticket_ref }}
+              </span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span
+                class="w-1.5 h-1.5 rounded-full {% if item.status == 'ACTIVE' %}bg-emerald-600 ring-2 ring-emerald-200{% elif item.status == 'RESERVED' %}bg-amber-500 animate-ping{% else %}bg-slate-400{% endif %}"></span>
+              <span class="text-[10px] font-mono text-secondary uppercase tracking-widest font-bold">
+                TICKET PASS #{{ item.id }}
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- =========================================================================
+         EMPTY STATE FALLBACK CONTAINER (Shown via JavaScript tab filter if 0 items)
+         ========================================================================= -->
+    <div
+      class="hidden flex-col items-center justify-center text-center p-12 bg-surface-container-lowest rounded-2xl border border-surface-container-high shadow-sm my-6"
+      id="empty-state-view">
+      <div
+        class="w-16 h-16 rounded-2xl bg-surface-container-low flex items-center justify-center text-secondary mb-4 border border-surface-container-high">
+        <span class="material-symbols-outlined text-[32px] text-primary-container">confirmation_number</span>
+      </div>
+      <h3 class="text-xl font-black font-display text-on-surface mb-2">No Listings Found In This Category</h3>
+      <p class="text-sm text-secondary max-w-md font-medium mb-6">
+        You don't have any tickets currently under this status filter. You can list any unused train, flight, or event
+        pass at fair face value.
+      </p>
+      <a href="{% url 'sell-ticket' %}"
+        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-container text-white font-display text-xs uppercase tracking-wider font-extrabold shadow-sm hover:bg-primary transition-all no-underline">
+        <span class="material-symbols-outlined text-[18px]">add_circle</span>
+        <span>List A Spare Ticket Now</span>
+      </a>
+    </div>
+
+    <!-- =========================================================================
+         SELLER DESK BOTTOM ARCHITECTURAL FAQ & SETU GUARANTEE
+         ========================================================================= -->
+    <div class="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div
+        class="p-5 rounded-xl bg-surface-container-lowest border border-surface-container-high flex flex-col gap-2.5 shadow-2xs">
+        <div
+          class="w-8 h-8 rounded-lg bg-surface-container-low text-primary-container flex items-center justify-center border border-surface-container-high">
+          <span class="material-symbols-outlined text-[18px]">shield</span>
+        </div>
+        <h4 class="text-sm font-bold font-display text-on-surface m-0">Fair Price Guarantee</h4>
+        <p class="text-xs text-secondary leading-relaxed font-normal m-0">
+          Every ticket is capped strictly at original purchase price so fans never pay unfair markups.
+        </p>
+      </div>
+
+      <div
+        class="p-5 rounded-xl bg-surface-container-lowest border border-surface-container-high flex flex-col gap-2.5 shadow-2xs">
+        <div
+          class="w-8 h-8 rounded-lg bg-surface-container-low text-emerald-600 flex items-center justify-center border border-surface-container-high">
+          <span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+        </div>
+        <h4 class="text-sm font-bold font-display text-on-surface m-0">Safe &amp; Automatic Payouts</h4>
+        <p class="text-xs text-secondary leading-relaxed font-normal m-0">
+          When a buyer purchases your ticket, the payment is held safely and transferred automatically to your account
+          as soon as the transfer finishes.
+        </p>
+      </div>
+
+      <div
+        class="p-5 rounded-xl bg-surface-container-lowest border border-surface-container-high flex flex-col gap-2.5 shadow-2xs">
+        <div
+          class="w-8 h-8 rounded-lg bg-surface-container-low text-secondary flex items-center justify-center border border-surface-container-high">
+          <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
+        </div>
+        <h4 class="text-sm font-bold font-display text-on-surface m-0">Official Ticket Re-Issue</h4>
+        <p class="text-xs text-secondary leading-relaxed font-normal m-0">
+          We update the ticket directly into the buyer's name with the provider, keeping your personal details safe and
+          ensuring the new ticket is 100% valid.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Tab filtering logic for seller desk
+  function filterListings(category) {
+    const tabs = ['all', 'active', 'reserved', 'sold'];
+    tabs.forEach(tab => {
+      const el = document.getElementById('tab-' + tab);
+      if (!el) return;
+      if (tab === category) {
+        el.className = 'px-4 py-2 rounded-xl bg-inverse-surface text-inverse-on-surface font-label-ticket text-xs font-bold uppercase tracking-wider shadow-sm transition-all cursor-pointer';
+      } else {
+        el.className = 'px-4 py-2 rounded-xl text-secondary hover:text-on-surface font-label-ticket text-xs font-bold uppercase tracking-wider transition-all cursor-pointer';
+      }
+    });
+
+    const items = document.querySelectorAll('.listing-item');
+    let visibleCount = 0;
+
+    items.forEach(item => {
+      const status = item.getAttribute('data-status');
+      if (category === 'all' || status === category) {
+        item.style.display = 'flex';
+        visibleCount++;
+      } else {
+        item.style.display = 'none';
+      }
+    });
+
+    const emptyState = document.getElementById('empty-state-view');
+    if (emptyState) {
+      if (visibleCount === 0) {
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+      } else {
+        emptyState.classList.remove('flex');
+        emptyState.classList.add('hidden');
+      }
+    }
+  }
+</script>
+{% endblock %}

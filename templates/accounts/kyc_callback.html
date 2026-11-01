@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verification Status &bull; lastchance{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto px-4 sm:px-6 py-12">
+  <div class="bg-white rounded-xl p-8 sm:p-10 text-center border border-slate-200 shadow-card">
+    {% if status == 'VERIFIED' %}
+      <!-- Success State -->
+      <div class="w-16 h-16 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto mb-5 shadow-xs">
+        <svg class="w-8 h-8 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="mb-2">
+        <span class="tech-chip text-emerald-700 bg-emerald-50 border-emerald-200">
+          <span class="tech-chip-pulse"></span>
+          <span>CONSENT VERIFIED</span>
+        </span>
+      </div>
+
+      <h1 class="text-2xl sm:text-3xl font-black font-display text-slate-900 tracking-tight mb-2">
+        Identity Verified Successfully!
+      </h1>
+      <p class="text-slate-500 text-xs sm:text-sm font-medium leading-relaxed max-w-md mx-auto mb-6">
+        Your Setu DigiLocker Aadhaar eKYC consent has been verified with the gateway. You now have full access to purchase tickets and list tickets for resale.
+      </p>
+
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 sm:p-5 text-left mb-6 space-y-2.5 text-xs sm:text-sm font-mono">
+        <div class="flex justify-between items-center">
+          <span class="text-slate-500 font-sans">Verified Legal Name:</span>
+          <strong class="text-slate-900 font-bold font-sans">{{ verified_legal_name }}</strong>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-500 font-sans">Verification Method:</span>
+          <span class="font-bold text-slate-800 font-sans">Setu DigiLocker Aadhaar eKYC</span>
+        </div>
+        {% if request_id %}
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500 font-sans">Session Reference:</span>
+            <span class="text-slate-800 font-bold">{{ request_id }}</span>
+          </div>
+        {% endif %}
+      </div>
+
+      {% if return_to %}
+        <div class="flex items-center justify-center gap-3 flex-wrap">
+          <a href="{{ return_to }}" class="btn-luxury btn-luxury-primary text-xs uppercase tracking-wider py-2.5 px-6">
+            Continue to Transaction &rarr;
+          </a>
+          <a href="{% url 'explore' %}" class="btn-luxury btn-luxury-secondary text-xs py-2.5 px-5">
+            Return to Marketplace
+          </a>
+        </div>
+      {% else %}
+        <div class="flex items-center justify-center gap-2.5 flex-wrap">
+          <a href="{% url 'explore' %}" class="btn-luxury btn-luxury-primary text-xs py-2.5 px-5">
+            Explore Tickets
+          </a>
+          <a href="{% url 'sell-ticket' %}" class="btn-luxury btn-luxury-secondary text-[#FF6600] border-orange-300 text-xs py-2.5 px-5">
+            Sell a Ticket
+          </a>
+          <a href="{% url 'ticket-vault' %}" class="btn-luxury btn-luxury-secondary text-xs py-2.5 px-5">
+            Ticket Vault
+          </a>
+        </div>
+      {% endif %}
+
+    {% else %}
+      <!-- Failure or Incomplete State -->
+      <div class="w-16 h-16 rounded-xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto mb-5 shadow-xs">
+        <svg class="w-8 h-8 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+
+      <h1 class="text-2xl sm:text-3xl font-black font-display text-slate-900 tracking-tight mb-2">
+        Verification Incomplete
+      </h1>
+      <p class="text-slate-500 text-xs sm:text-sm font-medium leading-relaxed max-w-md mx-auto mb-6">
+        {{ error|default:'Setu DigiLocker consent could not be verified or was declined. Please try again.' }}
+      </p>
+
+      <div class="flex items-center justify-center gap-3 flex-wrap">
+        <a href="{% url 'verification' %}{% if return_to %}?returnTo={{ return_to|urlencode }}{% endif %}"
+           class="btn-luxury btn-luxury-primary text-xs uppercase tracking-wider py-2.5 px-6">
+          Try Verification Again &rarr;
+        </a>
+        <a href="{% url 'explore' %}" class="btn-luxury btn-luxury-secondary text-xs py-2.5 px-5">
+          Return to Marketplace
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

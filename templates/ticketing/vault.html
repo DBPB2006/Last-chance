@@ -1,0 +1,822 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ticket Vault &bull; lastchance{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Machine barcode generation styling */
+  .barcode-lines {
+    background: repeating-linear-gradient(
+      to right,
+      #111827,
+      #111827 2px,
+      transparent 2px,
+      transparent 4px,
+      #111827 4px,
+      #111827 7px,
+      transparent 7px,
+      transparent 9px,
+      #111827 9px,
+      #111827 10px,
+      transparent 10px,
+      transparent 14px,
+      #111827 14px,
+      #111827 17px,
+      transparent 17px,
+      transparent 19px
+    );
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- FULL SCREEN WIDTH CONTAINER (NO RESTRICTIVE BOUNDARIES OR MAX-W-7XL MARGINS, MATCHING EXPLORE PAGE) -->
+<div class="w-full px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+
+  <!-- 1. USER IDENTITY & VAULT HEADER -->
+  <section class="bg-surface-container-lowest rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4 border border-slate-200/60 w-full">
+    <div class="space-y-2.5 flex-1 min-w-0">
+      <div class="flex flex-wrap items-center gap-2">
+        {% if user.is_identity_verified %}
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 font-display-hero uppercase tracking-wider">
+            <span class="material-symbols-outlined text-[16px]">verified_user</span>
+            <span>DigiLocker KYC Verified</span>
+          </div>
+        {% else %}
+          <a href="{% url 'verification' %}" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-bold border border-amber-200 hover:bg-amber-100 transition font-display-hero uppercase tracking-wider">
+            <span class="material-symbols-outlined text-[16px]">shield</span>
+            <span>Verify KYC with DigiLocker</span>
+          </a>
+        {% endif %}
+        <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold font-mono border border-slate-200/80">
+          User ID: LC-IND-{{ user.id|stringformat:"06d" }}
+        </span>
+      </div>
+      <div>
+        <h1 class="font-display-hero text-2xl sm:text-3xl lg:text-4xl font-extrabold text-on-surface tracking-tight">
+          {{ user.verified_legal_name|default:user.username }}’s <span class="text-primary-container">Ticket Vault</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-on-surface-variant font-medium mt-1">
+          Your personal passbook with genuine dynamic QR gate passes, verified tickets, and instant resale transfer options.
+        </p>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="flex flex-wrap sm:flex-nowrap items-center gap-2.5 self-start lg:self-center shrink-0">
+      <a class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-display-hero text-xs font-bold uppercase tracking-wider transition-all" data-path="all-passes" href="{% url 'explore' %}">
+        <span class="material-symbols-outlined text-[17px]">search</span>
+        Browse Passes
+      </a>
+      <a class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-display-hero text-xs font-bold uppercase tracking-wider shadow-sm transition-all active:scale-[0.98]" data-path="sell-tickets" href="{% url 'sell-ticket' %}">
+        <span class="material-symbols-outlined text-[17px]">sell</span>
+        Resell a Pass
+      </a>
+      <a href="{% url 'user-orders' %}" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-display-hero text-xs font-bold uppercase tracking-wider transition-all">
+        <span class="material-symbols-outlined text-[17px]">receipt_long</span>
+        Order History
+      </a>
+    </div>
+  </section>
+
+  <!-- 2. TELEMETRY HUD (4 METRIC TILES) -->
+  <section class="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+    <!-- Active Passes -->
+    <div class="bg-surface-container-lowest rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/60 flex items-start justify-between">
+      <div class="space-y-1">
+        <span class="text-xs uppercase font-display-hero font-bold tracking-wider text-on-surface-variant">Active Passes</span>
+        <p class="font-display-hero text-3xl sm:text-4xl font-black text-on-surface" id="hud-active-count">{{ active_count|stringformat:"02d"|default:"00" }}</p>
+        <p class="text-[11px] sm:text-xs text-on-surface-variant font-medium">Gate-ready dynamic passes</p>
+      </div>
+      <div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-primary-container shrink-0">
+        <span class="material-symbols-outlined text-[22px]">confirmation_number</span>
+      </div>
+    </div>
+
+    <!-- In Resale -->
+    <div class="bg-surface-container-lowest rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/60 flex items-start justify-between">
+      <div class="space-y-1">
+        <span class="text-xs uppercase font-display-hero font-bold tracking-wider text-on-surface-variant">In Resale</span>
+        <p class="font-display-hero text-3xl sm:text-4xl font-black text-primary-container" id="hud-listed-count">{{ listed_count|stringformat:"02d"|default:"00" }}</p>
+        <p class="text-[11px] sm:text-xs text-on-surface-variant font-medium">Active marketplace listings</p>
+      </div>
+      <div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary-container shrink-0">
+        <span class="material-symbols-outlined text-[22px]">storefront</span>
+      </div>
+    </div>
+
+    <!-- Admitted Passes -->
+    <div class="bg-surface-container-lowest rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/60 flex items-start justify-between">
+      <div class="space-y-1">
+        <span class="text-xs uppercase font-display-hero font-bold tracking-wider text-on-surface-variant">Admitted Passes</span>
+        <p class="font-display-hero text-3xl sm:text-4xl font-black text-emerald-600" id="hud-used-count">{{ used_count|stringformat:"02d"|default:"00" }}</p>
+        <p class="text-[11px] sm:text-xs text-emerald-600 font-medium flex items-center gap-1">
+          <span class="material-symbols-outlined text-[13px]">check_circle</span> Verified admissions
+        </p>
+      </div>
+      <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+        <span class="material-symbols-outlined text-[22px]">task_alt</span>
+      </div>
+    </div>
+
+    <!-- Wallet Balance -->
+    <div class="bg-surface-container-lowest rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/60 flex items-start justify-between">
+      <div class="space-y-1">
+        <span class="text-xs uppercase font-display-hero font-bold tracking-wider text-on-surface-variant">Wallet Balance</span>
+        <p class="font-display-hero text-2xl sm:text-3xl font-black text-on-surface tracking-tight">₹{{ user.wallet.balance|default:"0.00" }}</p>
+        <a class="inline-flex items-center text-xs font-display-hero font-bold text-primary-container hover:underline" data-path="wallet" href="{% url 'my-wallet' %}">
+          Instant UPI Payouts →
+        </a>
+      </div>
+      <div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-on-surface shrink-0">
+        <span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. FILTER TABS & TRUST BAR -->
+  <section class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+    <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0" id="filter-pill-container">
+      <button data-filter="all" class="vault-tab-btn px-4 py-2 rounded-full bg-on-surface text-surface-container-lowest font-display-hero text-xs font-bold uppercase tracking-wider shadow-sm transition-all whitespace-nowrap" type="button">
+        All Passes (<span id="tab-count-all">{{ count|default:"0" }}</span>)
+      </button>
+      <button data-filter="train" class="vault-tab-btn px-4 py-2 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface font-display-hero text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap border border-slate-200/60" type="button">
+        Trains (<span id="tab-count-train">{{ train_count|default:"0" }}</span>)
+      </button>
+      <button data-filter="flight" class="vault-tab-btn px-4 py-2 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface font-display-hero text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap border border-slate-200/60" type="button">
+        Flights (<span id="tab-count-flight">{{ flight_count|default:"0" }}</span>)
+      </button>
+      <button data-filter="concert" class="vault-tab-btn px-4 py-2 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface font-display-hero text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap border border-slate-200/60" type="button">
+        Concerts &amp; Events (<span id="tab-count-concert">{{ concert_count|default:"0" }}</span>)
+      </button>
+      <button data-filter="sports" class="vault-tab-btn px-4 py-2 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface font-display-hero text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap border border-slate-200/60" type="button">
+        Sports (<span id="tab-count-sports">{{ sports_count|default:"0" }}</span>)
+      </button>
+      <button data-filter="movie" class="vault-tab-btn px-4 py-2 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface font-display-hero text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap border border-slate-200/60" type="button">
+        Movies (<span id="tab-count-movie">{{ movie_count|default:"0" }}</span>)
+      </button>
+    </div>
+    <div class="flex items-center gap-2 text-xs font-display-hero uppercase tracking-wider text-on-surface-variant font-bold shrink-0">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span>100% Genuine Verified Tickets</span>
+    </div>
+  </section>
+
+  <!-- 4. PERFORATED SIGNATURE BOARDING PASS CARDS (3-COLUMN RESPONSIVE GRID LIKE EXPLORE PAGE) -->
+  {% if not tickets %}
+    <div class="bg-surface-container-lowest rounded-2xl p-8 sm:p-12 text-center border border-slate-200/80 shadow-sm max-w-lg mx-auto w-full my-4">
+      <div class="w-14 h-14 rounded-2xl bg-primary-fixed flex items-center justify-center mx-auto mb-3 text-primary-container">
+        <span class="material-symbols-outlined text-[28px]">confirmation_number</span>
+      </div>
+      <h3 class="font-display-hero text-xl font-bold text-on-surface mb-1">No tickets in your vault yet</h3>
+      <p class="text-on-surface-variant text-xs sm:text-sm leading-relaxed mb-6">
+        When you acquire a verified transit or event ticket, your genuine gate pass and QR admission credential will appear here.
+      </p>
+      <div>
+        <a href="{% url 'explore' %}" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-primary-container hover:bg-[#e65c00] text-on-primary font-display-hero text-xs font-bold uppercase tracking-wider shadow-sm transition">
+          <span class="material-symbols-outlined text-[16px]">search</span>
+          <span>Explore Available Tickets</span>
+        </a>
+      </div>
+    </div>
+  {% else %}
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full" id="vault-ticket-list">
+      {% for t in tickets %}
+        <article class="vault-ticket-card cursor-pointer bg-surface-container-lowest rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col justify-between transition-all hover:shadow-lg hover:border-slate-400 hover:-translate-y-0.5 duration-200 relative group"
+          data-category="{{ t.category|lower }}"
+          data-status="{{ t.status }}"
+          data-detail-url="{% url 'ticket-detail-view' t.id %}"
+          id="ticket-card-{{ t.id }}"
+          tabindex="0"
+          role="link"
+          aria-label="View details for {{ t.title }}">
+
+          <!-- Top Header Bar (Category-Tailored Aesthetics) -->
+          {% if t.category == 'train' %}
+            <div class="bg-primary-container px-4 sm:px-5 py-3 flex items-center justify-between text-on-primary">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-7 h-7 rounded bg-white/20 flex items-center justify-center text-white backdrop-blur-xs shrink-0">
+                  <span class="material-symbols-outlined text-[16px]">train</span>
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="font-display-hero text-[11px] font-extrabold uppercase tracking-wider truncate">{{ t.provider_name|upper }}</span>
+                  <span class="font-mono text-[9px] text-white/80 truncate">EXP #{{ t.ticket_ref }}</span>
+                </div>
+              </div>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white text-primary-container font-display-hero text-[10px] font-black uppercase tracking-wider shadow-xs shrink-0">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                {% if t.status == 'ACTIVE' %}CONFIRMED{% elif t.status == 'LISTED' %}IN RESALE{% elif t.status == 'USED' %}ADMITTED{% else %}{{ t.status }}{% endif %}
+              </span>
+            </div>
+          {% elif t.category == 'flight' %}
+            <div class="bg-slate-900 px-4 sm:px-5 py-3 flex items-center justify-between text-white">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-7 h-7 rounded bg-white/15 flex items-center justify-center text-white backdrop-blur-xs shrink-0">
+                  <span class="material-symbols-outlined text-[16px]">flight_takeoff</span>
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="font-display-hero text-[11px] font-extrabold uppercase tracking-wider truncate">{{ t.provider_name|upper }}</span>
+                  <span class="font-mono text-[9px] text-slate-300 truncate">REF #{{ t.ticket_ref }}</span>
+                </div>
+              </div>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white text-slate-900 font-display-hero text-[10px] font-black uppercase tracking-wider shadow-xs shrink-0">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                {% if t.status == 'ACTIVE' %}GATE READY{% elif t.status == 'LISTED' %}IN RESALE{% elif t.status == 'USED' %}ADMITTED{% else %}{{ t.status }}{% endif %}
+              </span>
+            </div>
+          {% elif t.category == 'concert' or t.category == 'festival' %}
+            <div class="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 px-4 sm:px-5 py-3 flex items-center justify-between text-white">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-7 h-7 rounded bg-white/20 flex items-center justify-center text-white backdrop-blur-xs shrink-0">
+                  <span class="material-symbols-outlined text-[16px]">festival</span>
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="font-display-hero text-[11px] font-extrabold uppercase tracking-wider truncate">{{ t.provider_name|upper }}</span>
+                  <span class="font-mono text-[9px] text-white/80 truncate">REF #{{ t.ticket_ref }}</span>
+                </div>
+              </div>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white text-orange-700 font-display-hero text-[10px] font-black uppercase tracking-wider shadow-xs shrink-0">
+                <span class="w-1.5 h-1.5 rounded-full bg-orange-600 animate-pulse"></span>
+                {% if t.status == 'ACTIVE' %}VERIFIED{% elif t.status == 'LISTED' %}IN RESALE{% elif t.status == 'USED' %}ADMITTED{% else %}{{ t.status }}{% endif %}
+              </span>
+            </div>
+          {% elif t.category == 'sports' %}
+            <div class="bg-slate-900 px-4 sm:px-5 py-3 flex items-center justify-between text-white">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-7 h-7 rounded bg-white/20 flex items-center justify-center text-white backdrop-blur-xs shrink-0">
+                  <span class="material-symbols-outlined text-[16px]">sports_cricket</span>
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="font-display-hero text-[11px] font-extrabold uppercase tracking-wider truncate">{{ t.provider_name|upper }}</span>
+                  <span class="font-mono text-[9px] text-white/80 truncate">PASS #{{ t.ticket_ref }}</span>
+                </div>
+              </div>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white text-slate-900 font-display-hero text-[10px] font-black uppercase tracking-wider shadow-xs shrink-0">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                {% if t.status == 'ACTIVE' %}MATCH PASS{% elif t.status == 'LISTED' %}IN RESALE{% elif t.status == 'USED' %}ADMITTED{% else %}{{ t.status }}{% endif %}
+              </span>
+            </div>
+          {% elif t.category == 'movie' %}
+            <div class="bg-indigo-950 px-4 sm:px-5 py-3 flex items-center justify-between text-white">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-7 h-7 rounded bg-white/20 flex items-center justify-center text-white backdrop-blur-xs shrink-0">
+                  <span class="material-symbols-outlined text-[16px]">movie</span>
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="font-display-hero text-[11px] font-extrabold uppercase tracking-wider truncate">{{ t.provider_name|upper }}</span>
+                  <span class="font-mono text-[9px] text-white/80 truncate">AUDI #{{ t.ticket_ref }}</span>
+                </div>
+              </div>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white text-indigo-950 font-display-hero text-[10px] font-black uppercase tracking-wider shadow-xs shrink-0">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                {% if t.status == 'ACTIVE' %}SEAT CONFIRMED{% elif t.status == 'LISTED' %}IN RESALE{% elif t.status == 'USED' %}ADMITTED{% else %}{{ t.status }}{% endif %}
+              </span>
+            </div>
+          {% else %}
+            <div class="bg-slate-800 px-4 sm:px-5 py-3 flex items-center justify-between text-white">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-7 h-7 rounded bg-white/20 flex items-center justify-center text-white backdrop-blur-xs shrink-0">
+                  <span class="material-symbols-outlined text-[16px]">confirmation_number</span>
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="font-display-hero text-[11px] font-extrabold uppercase tracking-wider truncate">{{ t.provider_name|upper }}</span>
+                  <span class="font-mono text-[9px] text-white/80 truncate">REF #{{ t.ticket_ref }}</span>
+                </div>
+              </div>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white text-slate-800 font-display-hero text-[10px] font-black uppercase tracking-wider shadow-xs shrink-0">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                {{ t.status }}
+              </span>
+            </div>
+          {% endif %}
+
+          <!-- Body Content -->
+          {% if t.has_route %}
+            <!-- TRANSIT ROUTE BOARDING PASS LAYOUT (Train / Flight / Transit) -->
+            <div class="p-4 sm:p-5 space-y-4">
+              <!-- Big Route Flow -->
+              <div class="flex items-center justify-between">
+                <div class="text-left w-20 sm:w-24 shrink-0">
+                  <span class="font-display-hero text-2xl sm:text-3xl lg:text-4xl font-black text-on-surface tracking-tight leading-none block">{{ t.origin_code }}</span>
+                  <p class="font-display-hero text-[11px] font-bold uppercase tracking-wider text-on-surface-variant mt-1 truncate max-w-[95px]" title="{{ t.origin_name }}">{{ t.origin_name }}</p>
+                  <p class="font-mono text-xs font-semibold text-primary mt-0.5">{{ t.departure_time }}</p>
+                </div>
+                <div class="flex flex-col items-center px-1 flex-1 min-w-0 max-w-[130px]">
+                  <span class="font-mono text-[9px] font-bold text-on-surface-variant uppercase tracking-wider mb-1 bg-surface-container-low px-2 py-0.5 rounded-full border border-slate-200/50 truncate max-w-full">
+                    {{ t.duration|default:"SCHEDULED" }}
+                  </span>
+                  <div class="w-full flex items-center">
+                    <div class="w-1.5 h-1.5 rounded-full {% if t.category == 'train' %}bg-primary-container{% else %}bg-slate-900{% endif %} shrink-0"></div>
+                    <div class="flex-1 h-[2px] bg-slate-200 relative flex items-center justify-center">
+                      <span class="material-symbols-outlined text-[15px] {% if t.category == 'train' %}text-primary-container{% else %}text-slate-900{% endif %} bg-surface-container-lowest px-0.5">
+                        {% if t.category == 'train' %}train{% else %}flight{% endif %}
+                      </span>
+                    </div>
+                    <div class="w-1.5 h-1.5 rounded-full border-2 {% if t.category == 'train' %}border-primary-container{% else %}border-slate-900{% endif %} bg-surface-container-lowest shrink-0"></div>
+                  </div>
+                  <span class="font-display-hero text-[9px] font-extrabold text-on-surface-variant uppercase tracking-wider mt-1 truncate max-w-full text-center" title="{{ t.vehicle }}">
+                    {{ t.vehicle }}
+                  </span>
+                </div>
+                <div class="text-right w-20 sm:w-24 shrink-0">
+                  <span class="font-display-hero text-2xl sm:text-3xl lg:text-4xl font-black text-on-surface tracking-tight leading-none block">{{ t.dest_code }}</span>
+                  <p class="font-display-hero text-[11px] font-bold uppercase tracking-wider text-on-surface-variant mt-1 truncate max-w-[95px]" title="{{ t.dest_name }}">{{ t.dest_name }}</p>
+                  <p class="font-mono text-xs font-semibold text-on-surface-variant mt-0.5">{{ t.arrival_time|default:t.departure_time }}</p>
+                </div>
+              </div>
+
+              <!-- Metadata Grid with Refined Hairline Dividers -->
+              <div class="grid grid-cols-4 rounded-xl border border-slate-200/80 bg-surface-container-low/60 divide-x divide-slate-200/80 overflow-hidden text-left shadow-xs">
+                <div class="p-2 sm:p-2.5 min-w-0">
+                  <span class="block text-[9px] font-display-hero uppercase font-bold text-on-surface-variant tracking-wider truncate">Date</span>
+                  <span class="font-display-hero text-[11px] sm:text-xs font-bold text-on-surface mt-0.5 block truncate">{{ t.formatted_date_short }}</span>
+                </div>
+                <div class="p-2 sm:p-2.5 min-w-0">
+                  <span class="block text-[9px] font-display-hero uppercase font-bold text-on-surface-variant tracking-wider truncate">{% if t.category == 'flight' %}Seat/Zone{% else %}Seat/Coach{% endif %}</span>
+                  <span class="font-display-hero text-[11px] sm:text-xs font-bold text-on-surface mt-0.5 block truncate" title="{{ t.seat_or_coach }}">{{ t.seat_or_coach }}</span>
+                </div>
+                <div class="p-2 sm:p-2.5 min-w-0">
+                  <span class="block text-[9px] font-display-hero uppercase font-bold text-on-surface-variant tracking-wider truncate">Attendee</span>
+                  <span class="font-display-hero text-[11px] sm:text-xs font-bold text-on-surface mt-0.5 block truncate">{{ t.attendee_name|default:user.verified_legal_name|default:user.username }}</span>
+                </div>
+                <div class="p-2 sm:p-2.5 min-w-0">
+                  <span class="block text-[9px] font-display-hero uppercase font-bold text-on-surface-variant tracking-wider truncate">Face Value</span>
+                  <span class="font-display-hero text-[11px] sm:text-xs font-bold text-primary-container mt-0.5 block truncate">₹{{ t.face_value }}</span>
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <!-- VENUE / EVENT PASS LAYOUT (Concert, Sports, Festivals, Movie) -->
+            <div class="p-4 sm:p-5 space-y-3.5">
+              <div>
+                <div class="flex items-center gap-1.5 text-[11px] font-display-hero font-bold uppercase tracking-wider text-amber-700 truncate">
+                  <span class="material-symbols-outlined text-[15px] shrink-0">location_on</span>
+                  <span class="truncate">{{ t.venue_or_route }}</span>
+                </div>
+                <h2 class="font-display-hero text-lg sm:text-xl font-black text-on-surface mt-1 truncate" title="{{ t.title }}">
+                  {{ t.title }}
+                </h2>
+                <p class="font-body-lg text-xs text-on-surface-variant mt-0.5 line-clamp-1">
+                  {{ t.itinerary_or_details|default:t.seat_or_coach }}
+                </p>
+              </div>
+
+              <!-- Metadata Grid -->
+              <div class="grid grid-cols-4 rounded-xl border border-slate-200/80 bg-surface-container-low/60 divide-x divide-slate-200/80 overflow-hidden text-left shadow-xs">
+                <div class="p-2 sm:p-2.5 min-w-0">
+                  <span class="block text-[9px] font-display-hero uppercase font-bold text-on-surface-variant tracking-wider truncate">Schedule</span>
+                  <span class="font-display-hero text-[11px] sm:text-xs font-bold text-on-surface mt-0.5 block truncate">{{ t.formatted_date }}</span>
+                </div>
+                <div class="p-2 sm:p-2.5 min-w-0">
+                  <span class="block text-[9px] font-display-hero uppercase font-bold text-on-surface-variant tracking-wider truncate">Seat/Tier</span>
+                  <span class="font-display-hero text-[11px] sm:text-xs font-bold text-on-surface mt-0.5 block truncate" title="{{ t.seat_or_coach }}">{{ t.seat_or_coach }}</span>
+                </div>
+                <div class="p-2 sm:p-2.5 min-w-0">
+                  <span class="block text-[9px] font-display-hero uppercase font-bold text-on-surface-variant tracking-wider truncate">Face Value</span>
+                  <span class="font-display-hero text-[11px] sm:text-xs font-bold text-on-surface mt-0.5 block truncate">₹{{ t.face_value }}</span>
+                </div>
+                <div class="p-2 sm:p-2.5 min-w-0">
+                  <span class="block text-[9px] font-display-hero uppercase font-bold text-on-surface-variant tracking-wider truncate">
+                    {% if t.status == 'LISTED' %}Asking{% else %}Attendee{% endif %}
+                  </span>
+                  <span class="font-display-hero text-[11px] sm:text-xs font-bold text-primary-container mt-0.5 block truncate">
+                    {% if t.status == 'LISTED' %}
+                      ₹{{ t.resale_asking_price|default:t.face_value }}
+                    {% else %}
+                      {{ t.attendee_name|default:user.verified_legal_name|default:user.username }}
+                    {% endif %}
+                  </span>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+
+          <!-- TACTILE PERFORATION DIVIDER (Signature tear seam) -->
+          <div class="relative w-full flex items-center py-0">
+            <!-- Left Notch Cutout -->
+            <div class="w-5 h-5 rounded-full bg-[#f9f9f7] border border-slate-200/90 -ml-2.5 shrink-0 shadow-inner"></div>
+            <!-- Perforated Dash Line -->
+            <div class="flex-1 h-0 border-b-2 border-dashed border-slate-200/90 mx-1"></div>
+            <!-- Right Notch Cutout -->
+            <div class="w-5 h-5 rounded-full bg-[#f9f9f7] border border-slate-200/90 -mr-2.5 shrink-0 shadow-inner"></div>
+          </div>
+
+          <!-- Bottom Stub Section (Machine Barcode + Verification + Vault Actions) -->
+          <div class="px-4 sm:px-5 py-3.5 bg-surface-container-low/40 flex items-center justify-between gap-3">
+            <!-- Barcode & Status Chip -->
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="h-8 w-16 barcode-lines rounded-xs opacity-85 shrink-0" title="Machine readable barcode"></div>
+              <div class="flex flex-col min-w-0">
+                <span class="inline-flex items-center gap-1 text-[10px] font-display-hero font-extrabold uppercase tracking-wider {% if t.status == 'LISTED' %}text-primary{% else %}text-emerald-700{% endif %} truncate">
+                  <span class="material-symbols-outlined text-[13px] shrink-0">{% if t.status == 'LISTED' %}storefront{% else %}verified{% endif %}</span>
+                  <span class="truncate">{% if t.status == 'LISTED' %}IN RESALE{% elif t.category == 'flight' %}IATA VERIFIED{% else %}VERIFIED{% endif %}</span>
+                </span>
+                <span class="font-mono text-[9px] text-slate-500 font-semibold truncate">{{ t.ticket_ref }}</span>
+              </div>
+            </div>
+
+            <!-- Vault Actions -->
+            <div class="flex items-center gap-1.5 shrink-0" onclick="event.stopPropagation()">
+              <button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-on-surface text-surface-container-lowest font-display-hero text-[11px] font-bold uppercase tracking-wider hover:bg-black transition-all shadow-xs" onclick="event.stopPropagation(); openQrModal('{{ t.title|escapejs }}', '{{ t.seat_or_coach|escapejs }}', '{{ t.category|upper|escapejs }} PASS • {{ t.venue_or_route|escapejs }}', '{{ t.ticket_ref|escapejs }}', '{% if t.qr_image_url %}{{ t.qr_image_url|escapejs }}{% endif %}', '{% url 'ticket-download-pdf' t.id %}', '{% url 'ticket-detail-view' t.id %}')" type="button">
+                <span class="material-symbols-outlined text-[15px] text-primary-container">qr_code_2</span>
+                <span>Pass</span>
+              </button>
+              {% if t.is_eligible_for_resale and t.status == 'ACTIVE' %}
+                <a class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary-container text-on-primary font-display-hero text-[11px] font-bold uppercase tracking-wider hover:bg-[#e65c00] transition-all shadow-xs" data-path="sell-tickets" href="{% url 'sell-ticket' %}?ticketId={{ t.id }}" onclick="event.stopPropagation()">
+                  <span class="material-symbols-outlined text-[14px]">sell</span>
+                  <span>Sell</span>
+                </a>
+              {% elif t.status == 'LISTED' %}
+                <a class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary-container text-on-primary font-display-hero text-[11px] font-bold uppercase tracking-wider hover:bg-[#e65c00] transition-all shadow-xs" data-path="my-listings" href="{% url 'my-listings' %}" onclick="event.stopPropagation()">
+                  <span class="material-symbols-outlined text-[14px]">edit_note</span>
+                  <span>Manage</span>
+                </a>
+              {% endif %}
+              <a href="{% url 'ticket-download-pdf' t.id %}" class="w-7 h-7 rounded-lg bg-surface-container hover:bg-surface-container-high border border-slate-200/60 flex items-center justify-center text-on-surface transition-colors" title="Download PDF" onclick="event.stopPropagation()">
+                <span class="material-symbols-outlined text-[15px]">download</span>
+              </a>
+            </div>
+          </div>
+
+        </article>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  <!-- 5. ACTIVE RESALE LISTINGS TABLE MODULE -->
+  <section class="bg-surface-container-lowest rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200/60 space-y-4 w-full">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h2 class="font-display-hero text-xl sm:text-2xl font-bold text-on-surface tracking-tight">Your Active Resale Listings</h2>
+        <p class="text-xs text-on-surface-variant font-medium mt-0.5">Active tickets currently listed on the marketplace.</p>
+      </div>
+      <a class="text-xs font-display-hero font-bold uppercase tracking-wider text-primary-container hover:underline self-start sm:self-center" data-path="my-listings" href="{% url 'my-listings' %}">
+        Open Listings Hub →
+      </a>
+    </div>
+
+    <!-- Listings Table -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead>
+          <tr class="border-b border-surface-container font-display-hero text-xs uppercase tracking-wider text-on-surface-variant">
+            <th class="py-3 px-4">Ticket Ref</th>
+            <th class="py-3 px-4">Event Name &amp; Route</th>
+            <th class="py-3 px-4">Scheduled Date</th>
+            <th class="py-3 px-4">Resale Asking Price</th>
+            <th class="py-3 px-4">Original Face Value</th>
+            <th class="py-3 px-4">Status</th>
+            <th class="py-3 px-4 text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-surface-container-low font-medium">
+          {% for t in tickets %}
+            {% if t.status == 'LISTED' %}
+              <tr class="hover:bg-surface-container-low/40 transition-colors">
+                <td class="py-3.5 px-4 font-mono font-bold text-xs uppercase tracking-wide text-on-surface">{{ t.ticket_ref }}</td>
+                <td class="py-3.5 px-4 text-on-surface font-semibold font-display-hero">
+                  <div>{{ t.title }}</div>
+                  <div class="text-xs text-on-surface-variant font-normal">{{ t.venue_or_route }}</div>
+                </td>
+                <td class="py-3.5 px-4 text-on-surface-variant">{{ t.formatted_date }}</td>
+                <td class="py-3.5 px-4 font-display-hero font-bold text-primary-container">
+                  {% if t.resale_asking_price %}₹{{ t.resale_asking_price }}{% else %}₹{{ t.face_value }}{% endif %}
+                </td>
+                <td class="py-3.5 px-4 text-on-surface-variant">₹{{ t.face_value }}</td>
+                <td class="py-3.5 px-4">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed-variant text-xs font-display-hero font-bold uppercase tracking-wider">
+                    <span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
+                    In Resale
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                  <a class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-display-hero text-xs font-bold uppercase tracking-wider transition-all" data-path="my-listings" href="{% url 'my-listings' %}">
+                    Manage
+                  </a>
+                </td>
+              </tr>
+            {% endif %}
+          {% empty %}
+            <tr>
+              <td colspan="7" class="py-6 px-4 text-center text-on-surface-variant text-xs">
+                No tickets in your vault yet.
+              </td>
+            </tr>
+          {% endfor %}
+          <tr id="no-listed-row" class="hidden">
+            <td colspan="7" class="py-6 px-4 text-center text-on-surface-variant text-xs">
+              No passes currently listed on the resale market. You can list eligible passes above.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 6. EMERGENCY GATE SUPPORT & ASSISTANCE BANNER -->
+  <section class="bg-gradient-to-r from-orange-50/60 via-white to-amber-50/30 rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200/60 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 w-full">
+    <div class="flex items-center gap-3.5 flex-1 min-w-0">
+      <div class="w-11 h-11 rounded-xl bg-primary-container flex items-center justify-center text-on-primary shrink-0 shadow-sm">
+        <span class="material-symbols-outlined text-[22px]">support_agent</span>
+      </div>
+      <div class="space-y-0.5">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-display-hero font-bold text-primary-container uppercase tracking-wider">Gate Support Desk</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+          <span class="text-xs text-on-surface-variant font-medium">24/7 Verified Assistance</span>
+        </div>
+        <h3 class="font-display-hero text-base sm:text-lg font-bold text-on-surface">Need assistance with your ticket pass?</h3>
+        <p class="text-xs text-on-surface-variant leading-relaxed">
+          Our support team is available 24/7 to verify admission credentials directly with transit authorities and venue turnstiles.
+        </p>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto shrink-0">
+      <div class="px-3.5 py-1.5 bg-surface-container-lowest rounded-xl flex flex-col border border-slate-200/80 shadow-xs">
+        <span class="text-[9px] text-on-surface-variant uppercase font-display-hero font-bold tracking-wider">Toll-Free Helpline</span>
+        <span class="font-display-hero text-xs sm:text-sm font-black text-primary-container">1800-LC-TICKET</span>
+      </div>
+      <a href="{% url 'user-orders' %}" class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-display-hero text-xs font-bold uppercase tracking-wider shadow-sm transition-all active:scale-[0.98]">
+        Contact Support
+      </a>
+    </div>
+  </section>
+
+</div>
+
+<!-- INTERACTIVE QR PASS MODAL DIALOG -->
+<div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 transition-opacity" id="qrModal">
+  <div class="bg-surface-container-lowest w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 border border-slate-200">
+    <!-- Modal Header -->
+    <div class="p-5 bg-surface-container flex items-center justify-between border-b border-surface-container-high">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary-container text-[20px]">verified_user</span>
+        <span class="font-display-hero text-xs font-bold uppercase tracking-wider text-on-surface" id="modalCategory">DIGITAL GATE PASS</span>
+      </div>
+      <button class="w-8 h-8 rounded-full bg-surface-container-highest hover:bg-outline-variant text-on-surface flex items-center justify-center transition-colors" onclick="closeQrModal()" type="button" aria-label="Close modal">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="p-6 sm:p-7 flex flex-col items-center text-center space-y-5">
+      <div>
+        <h3 class="font-display-hero text-xl font-bold text-on-surface" id="modalTitle">Admission Pass</h3>
+        <p class="text-sm font-medium text-on-surface-variant mt-1" id="modalSeat">Coach / Seat</p>
+        <span class="inline-block mt-2 px-3 py-1 rounded-full bg-surface-container text-on-surface-variant font-display-hero text-xs font-bold uppercase tracking-wider font-mono" id="modalRef">Ref: -</span>
+      </div>
+
+      <!-- Dynamic QR Container -->
+      <div class="p-4 bg-white rounded-2xl shadow-sm border-2 border-surface-container flex flex-col items-center">
+        <img id="modalQrImage" src="" alt="Dynamic QR Pass" class="w-44 h-44 object-contain hidden rounded-lg">
+        <div id="modalQrFallback" class="flex flex-col items-center">
+          <svg class="w-44 h-44" fill="none" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <rect fill="white" height="200" width="200"></rect>
+            <!-- Top Left Finder -->
+            <rect fill="#111827" height="40" width="40" x="20" y="20"></rect>
+            <rect fill="white" height="24" width="24" x="28" y="28"></rect>
+            <rect fill="#ff6600" height="12" width="12" x="34" y="34"></rect>
+            <!-- Top Right Finder -->
+            <rect fill="#111827" height="40" width="40" x="140" y="20"></rect>
+            <rect fill="white" height="24" width="24" x="148" y="28"></rect>
+            <rect fill="#ff6600" height="12" width="12" x="154" y="34"></rect>
+            <!-- Bottom Left Finder -->
+            <rect fill="#111827" height="40" width="40" x="20" y="140"></rect>
+            <rect fill="white" height="24" width="24" x="28" y="148"></rect>
+            <rect fill="#ff6600" height="12" width="12" x="34" y="154"></rect>
+            <!-- Data Grid Simulation -->
+            <rect fill="#111827" height="12" width="12" x="70" y="24"></rect>
+            <rect fill="#111827" height="12" width="12" x="90" y="24"></rect>
+            <rect fill="#111827" height="12" width="12" x="110" y="24"></rect>
+            <rect fill="#111827" height="12" width="12" x="70" y="44"></rect>
+            <rect fill="#111827" height="12" width="12" x="110" y="44"></rect>
+            <rect fill="#111827" height="12" width="12" x="24" y="70"></rect>
+            <rect fill="#111827" height="12" width="12" x="44" y="70"></rect>
+            <rect fill="#ff6600" height="12" width="12" x="70" y="70"></rect>
+            <rect fill="#111827" height="20" width="20" x="90" y="70"></rect>
+            <rect fill="#111827" height="12" width="12" x="120" y="70"></rect>
+            <rect fill="#111827" height="12" width="12" x="144" y="70"></rect>
+            <rect fill="#111827" height="12" width="12" x="164" y="70"></rect>
+            <rect fill="#111827" height="12" width="12" x="70" y="100"></rect>
+            <rect fill="#ff6600" height="12" width="12" x="100" y="100"></rect>
+            <rect fill="#111827" height="12" width="12" x="120" y="100"></rect>
+            <rect fill="#111827" height="12" width="12" x="150" y="100"></rect>
+            <rect fill="#111827" height="12" width="12" x="70" y="120"></rect>
+            <rect fill="#111827" height="12" width="12" x="90" y="120"></rect>
+            <rect fill="#ff6600" height="20" width="20" x="110" y="120"></rect>
+            <rect fill="#111827" height="12" width="12" x="140" y="120"></rect>
+            <rect fill="#111827" height="12" width="12" x="164" y="120"></rect>
+            <rect fill="#111827" height="12" width="12" x="70" y="150"></rect>
+            <rect fill="#111827" height="12" width="12" x="90" y="150"></rect>
+            <rect fill="#111827" height="12" width="12" x="120" y="150"></rect>
+            <rect fill="#111827" height="20" width="20" x="150" y="150"></rect>
+            <rect fill="#111827" height="12" width="20" x="70" y="170"></rect>
+            <rect fill="#111827" height="12" width="12" x="100" y="170"></rect>
+            <rect fill="#ff6600" height="12" width="12" x="120" y="170"></rect>
+          </svg>
+        </div>
+      </div>
+
+      <p class="text-xs text-on-surface-variant leading-relaxed max-w-xs">
+        Present this verified QR pass directly at the entry gate scanner. Screen brightness will auto-maximize at the turnstile.
+      </p>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="p-5 bg-surface-container flex items-center justify-between gap-2.5 border-t border-surface-container-high">
+      <button class="flex-1 py-2.5 rounded-lg bg-surface-container-highest hover:bg-outline-variant text-on-surface font-display-hero text-xs font-bold uppercase tracking-wider transition-all" onclick="closeQrModal()" type="button">
+        Close Pass
+      </button>
+      <a id="modalDetailBtn" href="#" class="px-3.5 py-2.5 rounded-lg bg-surface-container-highest hover:bg-outline-variant text-on-surface font-display-hero text-xs font-bold uppercase tracking-wider transition-all text-center hidden">
+        View Details &rarr;
+      </a>
+      <a id="modalPdfBtn" href="#" class="flex-1 py-2.5 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-display-hero text-xs font-bold uppercase tracking-wider shadow-sm transition-all text-center">
+        Download PDF
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPT FOR MODAL & FILTER TABS INTERACTION -->
+<script>
+  function openQrModal(title, seat, category, ref, qrUrl, pdfUrl, detailUrl) {
+    document.getElementById('modalTitle').textContent = title || 'Admission Pass';
+    document.getElementById('modalSeat').textContent = seat || 'General';
+    document.getElementById('modalCategory').textContent = category || 'DIGITAL GATE PASS';
+    document.getElementById('modalRef').textContent = 'Ref: ' + (ref || '-');
+
+    const qrImg = document.getElementById('modalQrImage');
+    const qrFallback = document.getElementById('modalQrFallback');
+    if (qrUrl && qrUrl.trim() !== '') {
+      qrImg.src = qrUrl;
+      qrImg.classList.remove('hidden');
+      qrFallback.classList.add('hidden');
+    } else {
+      qrImg.classList.add('hidden');
+      qrFallback.classList.remove('hidden');
+    }
+
+    const pdfBtn = document.getElementById('modalPdfBtn');
+    if (pdfUrl && pdfUrl.trim() !== '') {
+      pdfBtn.href = pdfUrl;
+      pdfBtn.classList.remove('hidden');
+    } else {
+      pdfBtn.classList.add('hidden');
+    }
+
+    const detailBtn = document.getElementById('modalDetailBtn');
+    if (detailBtn) {
+      if (detailUrl && detailUrl.trim() !== '') {
+        detailBtn.href = detailUrl;
+        detailBtn.classList.remove('hidden');
+      } else {
+        detailBtn.classList.add('hidden');
+      }
+    }
+
+    const modal = document.getElementById('qrModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeQrModal() {
+    const modal = document.getElementById('qrModal');
+    if (modal) {
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Close on backdrop click
+    const modal = document.getElementById('qrModal');
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+          closeQrModal();
+        }
+      });
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeQrModal();
+      }
+    });
+
+    // Make entire ticket card redirect to ticket details on click
+    const cards = document.querySelectorAll('.vault-ticket-card');
+    cards.forEach(card => {
+      card.addEventListener('click', function(e) {
+        // If the click is inside a button, link, or action control, let that run and don't navigate
+        if (e.target.closest('button, a, input, select, textarea')) {
+          return;
+        }
+        const url = this.getAttribute('data-detail-url');
+        if (url) {
+          window.location.href = url;
+        }
+      });
+
+      card.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          if (e.target.closest('button, a')) return;
+          const url = this.getAttribute('data-detail-url');
+          if (url) {
+            window.location.href = url;
+          }
+        }
+      });
+    });
+
+    // Compute live counters & card mapping
+    let activeCount = 0;
+    let listedCount = 0;
+    let usedCount = 0;
+    let countsByCategory = {
+      train: 0,
+      flight: 0,
+      concert: 0,
+      sports: 0,
+      movie: 0,
+      other: 0
+    };
+
+    cards.forEach(card => {
+      const status = card.getAttribute('data-status');
+      const cat = (card.getAttribute('data-category') || '').toLowerCase();
+
+      if (status === 'ACTIVE') activeCount++;
+      if (status === 'LISTED') listedCount++;
+      if (status === 'USED' || status === 'CANCELLED') usedCount++;
+
+      if (cat.includes('train')) {
+        countsByCategory.train++;
+      } else if (cat.includes('flight')) {
+        countsByCategory.flight++;
+      } else if (cat.includes('concert') || cat.includes('festival') || cat.includes('live')) {
+        countsByCategory.concert++;
+      } else if (cat.includes('sports')) {
+        countsByCategory.sports++;
+      } else if (cat.includes('movie') || cat.includes('cinema')) {
+        countsByCategory.movie++;
+      } else {
+        countsByCategory.other++;
+      }
+    });
+
+    const hudActive = document.getElementById('hud-active-count');
+    if (hudActive) hudActive.textContent = activeCount < 10 ? '0' + activeCount : activeCount;
+    const hudListed = document.getElementById('hud-listed-count');
+    if (hudListed) hudListed.textContent = listedCount < 10 ? '0' + listedCount : listedCount;
+    const hudUsed = document.getElementById('hud-used-count');
+    if (hudUsed) hudUsed.textContent = usedCount < 10 ? '0' + usedCount : usedCount;
+
+    const tabTrain = document.getElementById('tab-count-train');
+    if (tabTrain) tabTrain.textContent = countsByCategory.train;
+    const tabFlight = document.getElementById('tab-count-flight');
+    if (tabFlight) tabFlight.textContent = countsByCategory.flight;
+    const tabConcert = document.getElementById('tab-count-concert');
+    if (tabConcert) tabConcert.textContent = countsByCategory.concert;
+    const tabSports = document.getElementById('tab-count-sports');
+    if (tabSports) tabSports.textContent = countsByCategory.sports;
+    const tabMovie = document.getElementById('tab-count-movie');
+    if (tabMovie) tabMovie.textContent = countsByCategory.movie;
+
+    if (listedCount === 0 && cards.length > 0) {
+      const emptyRow = document.getElementById('no-listed-row');
+      if (emptyRow) emptyRow.classList.remove('hidden');
+    }
+
+    // Interactive Filter Button toggle
+    const filterButtons = document.querySelectorAll('#filter-pill-container button');
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        filterButtons.forEach(b => {
+          b.className = 'vault-tab-btn px-4 py-2 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface font-display-hero text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap border border-slate-200/60';
+        });
+        this.className = 'vault-tab-btn px-4 py-2 rounded-full bg-on-surface text-surface-container-lowest font-display-hero text-xs font-bold uppercase tracking-wider shadow-sm transition-all whitespace-nowrap';
+
+        const filter = this.getAttribute('data-filter');
+        cards.forEach(card => {
+          const cardCat = (card.getAttribute('data-category') || '').toLowerCase();
+          if (filter === 'all') {
+            card.style.display = '';
+          } else if (filter === 'concert') {
+            card.style.display = (cardCat.includes('concert') || cardCat.includes('festival') || cardCat.includes('live')) ? '' : 'none';
+          } else if (filter === 'sports') {
+            card.style.display = cardCat.includes('sports') ? '' : 'none';
+          } else if (filter === 'movie') {
+            card.style.display = (cardCat.includes('movie') || cardCat.includes('cinema')) ? '' : 'none';
+          } else {
+            card.style.display = cardCat.includes(filter) ? '' : 'none';
+          }
+        });
+      });
+    });
+  });
+</script>
+{% endblock %}

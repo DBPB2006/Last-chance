@@ -1,0 +1,327 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ticket Pass &bull; {{ ticket.title }} &bull; lastchance{% endblock %}
+
+{% block extra_head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  .font-display-hero {
+    font-family: 'Oswald', 'Outfit', sans-serif;
+  }
+  .font-body-lg {
+    font-family: 'DM Sans', 'Plus Jakarta Sans', sans-serif;
+  }
+</style>
+{% endblock %}
+
+{% block main_class %}w-full pt-28 sm:pt-32 bg-slate-50 flex-1 min-h-[calc(100vh-20rem)]{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
+
+  <!-- Breadcrumb Bar -->
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <a class="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors py-1.5 px-3 rounded-lg hover:bg-slate-200/60 font-display-hero uppercase tracking-wide text-xs font-bold" data-path="pass-vault" href="{% url 'ticket-vault' %}">
+      <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+      <span>Back to Ticket Vault</span>
+    </a>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 bg-white border border-slate-200 px-3.5 py-1.5 rounded-lg text-slate-800 text-xs font-mono font-semibold shadow-xs">
+        <span class="text-slate-400">PASS ID:</span>
+        <span class="text-slate-900 font-bold">{{ ticket.ticket_ref }}</span>
+      </div>
+      {% if ticket.status == 'ACTIVE' %}
+      <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-wider">
+        <span class="material-symbols-outlined text-[16px] text-emerald-600">verified</span>
+        <span>Valid Pass</span>
+      </div>
+      {% elif ticket.status == 'LISTED' %}
+      <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold uppercase tracking-wider">
+        <span class="material-symbols-outlined text-[16px] text-amber-600">storefront</span>
+        <span>Listed for Resale</span>
+      </div>
+      {% elif ticket.status == 'USED' %}
+      <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-300 text-slate-600 text-xs font-bold uppercase tracking-wider">
+        <span class="material-symbols-outlined text-[16px]">done_all</span>
+        <span>Used</span>
+      </div>
+      {% else %}
+      <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-red-50 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider">
+        <span class="material-symbols-outlined text-[16px]">cancel</span>
+        <span>{{ ticket.status }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- PANORAMIC HORIZONTAL BOARDING PASS STRIP (Full-Width Card) -->
+  <div class="relative w-full rounded-2xl bg-white border-2 border-slate-200 shadow-xl overflow-hidden">
+    <!-- Signal Orange Perimeter Strip Accent -->
+    <div class="h-2 w-full bg-gradient-to-r from-primary-container via-amber-500 to-primary"></div>
+
+    <!-- Top Ticket Header Ribbon -->
+    <div class="bg-slate-100/80 border-b border-slate-200 px-6 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="inline-flex items-center gap-1.5 bg-primary-container text-white px-2.5 py-0.5 rounded text-[11px] font-bold tracking-wider font-display-hero uppercase shadow-sm">
+          <span class="material-symbols-outlined text-[14px]">
+            {% if ticket.category == 'train' %}train{% elif ticket.category == 'flight' %}flight{% elif ticket.category == 'movie' %}movie{% elif ticket.category == 'sports' %}sports_soccer{% elif ticket.category == 'festival' %}festival{% elif ticket.category == 'concert' %}music_note{% else %}confirmation_number{% endif %}
+          </span>
+          <span>{{ ticket.category|title }} Pass</span>
+        </div>
+        <div class="text-xs text-slate-600 font-medium">
+          {{ ticket.provider_name }} &bull; <span class="font-mono font-bold text-slate-900">#{{ ticket.booking_reference|default:ticket.ticket_ref }}</span>
+        </div>
+      </div>
+      <div class="text-xs font-mono text-slate-500 font-semibold">
+        STATUS: <span class="text-slate-900 font-bold uppercase">{{ ticket.status }}</span>
+      </div>
+    </div>
+
+    <!-- MAIN TICKET BODY & RIGHT BOARDING STUB -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 relative divide-y xl:divide-y-0">
+      <!-- TICKET BODY: 8 COLUMNS -->
+      <div class="xl:col-span-8 p-6 sm:p-7 flex flex-col justify-between gap-6 bg-white">
+        <!-- TOP ROW: PRIMARY GLANCEABILITY HERO CARDS -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+
+          <!-- 1. Passenger & Seat Focal Module (Lg: 6 Cols) -->
+          <div class="lg:col-span-6 bg-slate-50/60 border border-slate-200 rounded-2xl p-4.5 flex flex-col justify-between gap-4 shadow-xs">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-[11px] font-bold tracking-widest uppercase text-slate-500 font-display-hero">Passenger &amp; Seat Allocation</span>
+              </div>
+              <!-- Passenger Profile Header -->
+              <div class="bg-white border border-slate-200 rounded-xl p-3 flex items-center gap-3">
+                <div class="w-11 h-11 rounded-lg bg-slate-900 text-white flex items-center justify-center font-display-hero text-base font-bold shadow-xs shrink-0">
+                  {{ ticket.attendee_name|default:user.username|slice:":2"|upper }}
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-display-hero">Passenger</span>
+                    {% if user.is_identity_verified %}
+                    <span class="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-700 px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider">
+                      <span class="material-symbols-outlined text-[11px] text-emerald-600" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                      DigiLocker Verified
+                    </span>
+                    {% endif %}
+                  </div>
+                  <span class="text-base font-bold text-slate-900 font-display-hero tracking-wide uppercase truncate">
+                    {{ ticket.attendee_name|default:user.verified_legal_name|default:user.username }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Seat / Placement Pod -->
+            <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-display-hero block">Assigned Seat / Space</span>
+              <div class="my-1">
+                <span class="font-display-hero text-xl sm:text-2xl font-bold text-slate-900 leading-tight block">{{ ticket.seat_or_coach }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Operational Route & Event Block (Lg: 6 Cols) -->
+          <div class="lg:col-span-6 flex flex-col justify-between gap-3 bg-slate-50/60 border border-slate-200 rounded-2xl p-4.5">
+            <div>
+              <span class="text-[11px] font-bold tracking-widest uppercase text-slate-500 font-display-hero block">
+                {{ ticket.category|upper }} ADMISSION
+              </span>
+              <h1 class="font-display-hero text-2xl sm:text-3xl font-bold tracking-normal uppercase text-slate-900 mt-1 line-clamp-2">
+                {{ ticket.title }}
+              </h1>
+            </div>
+
+            <!-- Route or Venue Node Card -->
+            <div class="bg-white border border-slate-200 rounded-xl p-3.5 flex flex-col gap-3 shadow-xs">
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-display-hero block">
+                  {% if "→" in ticket.venue_or_route or "->" in ticket.venue_or_route %}Route{% else %}Venue{% endif %}
+                </span>
+                <div class="font-display-hero text-lg sm:text-xl font-bold text-slate-900 leading-snug mt-1">
+                  {{ ticket.venue_or_route }}
+                </div>
+              </div>
+
+              <!-- Schedule Bar -->
+              <div class="pt-2 border-t border-slate-200">
+                <div class="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-0.5 rounded-full text-[11px] font-bold text-slate-800 font-mono shadow-xs">
+                  <span class="material-symbols-outlined text-[13px] text-primary">schedule</span>
+                  <span>{{ ticket.formatted_date }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTTOM METADATA LEDGER STRIP -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 font-display-hero block">PNR / Ref</span>
+            <span class="font-mono text-xs font-bold text-slate-900 mt-0.5 block truncate">{{ ticket.booking_reference|default:ticket.ticket_ref }}</span>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 font-display-hero block">Scheduled Date</span>
+            <span class="text-xs font-bold text-slate-900 mt-0.5 block truncate">{{ ticket.formatted_date }}</span>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 font-display-hero block">Issuing Provider</span>
+            <span class="text-xs font-bold text-slate-900 mt-0.5 block truncate">{{ ticket.provider_name }}</span>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 font-display-hero block">Booking Face Value</span>
+            <span class="text-xs font-bold font-mono text-slate-900 mt-0.5 block">&#8377;{{ ticket.face_value }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOP-TO-BOTTOM PHYSICAL PERFORATION SEAM WITH NOTCHES (Between Body & Stub) -->
+      <div class="hidden xl:block absolute top-0 bottom-0 left-[66.666667%] -translate-x-1/2 w-6 pointer-events-none z-20">
+        <!-- Top Punch Notch -->
+        <div class="w-6 h-6 rounded-full bg-slate-50 border border-slate-300 absolute -top-3 left-0 shadow-inner"></div>
+        <!-- Perforated Tear Line -->
+        <div class="w-full h-full flex justify-center py-4">
+          <div class="h-full border-l-2 border-dashed border-slate-300"></div>
+        </div>
+        <!-- Bottom Punch Notch -->
+        <div class="w-6 h-6 rounded-full bg-slate-50 border border-slate-300 absolute -bottom-3 left-0 shadow-inner"></div>
+      </div>
+      <!-- Mobile Perforation Divider -->
+      <div class="xl:hidden relative w-full h-6 flex items-center justify-between px-0 my-0 bg-slate-50">
+        <div class="w-6 h-6 rounded-full bg-slate-50 border border-slate-300 -ml-3"></div>
+        <div class="w-full border-t-2 border-dashed border-slate-300"></div>
+        <div class="w-6 h-6 rounded-full bg-slate-50 border border-slate-300 -mr-3"></div>
+      </div>
+
+      <!-- RIGHT TEAR-OFF GATE PASS COUPON: QR & Barcode -->
+      <div class="xl:col-span-4 p-6 sm:p-7 flex flex-col justify-between items-center text-center gap-5 bg-white border-l-0 xl:border-l border-slate-200">
+        <div class="w-full flex items-center justify-between text-xs border-b border-slate-200 pb-2.5">
+          <span class="font-display-hero font-bold uppercase tracking-wider text-slate-600 text-[11px]">Boarding Stub</span>
+          <span class="font-mono text-[11px] text-slate-400">{{ ticket.ticket_ref }}</span>
+        </div>
+
+        <!-- Dynamic QR Card -->
+        <div class="w-full max-w-[260px] bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col items-center">
+          <div class="p-2 bg-white rounded-lg border border-slate-200 shadow-xs">
+            {% if ticket.qr_image_url %}
+            <img src="{{ ticket.qr_image_url }}" alt="Ticket QR Pass" class="w-40 h-40 object-contain rounded-md" />
+            {% else %}
+            <div class="w-40 h-40 bg-slate-100 flex items-center justify-center text-slate-400 font-mono text-xs">
+              QR Code Generated
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Barcode Strip -->
+        <div class="w-full max-w-[260px] flex flex-col items-center gap-1">
+          <svg class="w-full h-8 text-slate-900" fill="currentColor" preserveAspectRatio="none" viewBox="0 0 200 40">
+            <rect height="40" width="2" x="0" y="0"></rect>
+            <rect height="40" width="4" x="4" y="0"></rect>
+            <rect height="40" width="2" x="10" y="0"></rect>
+            <rect height="40" width="6" x="14" y="0"></rect>
+            <rect height="40" width="2" x="22" y="0"></rect>
+            <rect height="40" width="4" x="28" y="0"></rect>
+            <rect height="40" width="2" x="34" y="0"></rect>
+            <rect height="40" width="6" x="40" y="0"></rect>
+            <rect height="40" width="2" x="48" y="0"></rect>
+            <rect height="40" width="2" x="52" y="0"></rect>
+            <rect height="40" width="4" x="58" y="0"></rect>
+            <rect height="40" width="4" x="66" y="0"></rect>
+            <rect height="40" width="2" x="72" y="0"></rect>
+            <rect height="40" width="6" x="76" y="0"></rect>
+            <rect height="40" width="2" x="84" y="0"></rect>
+            <rect height="40" width="4" x="90" y="0"></rect>
+            <rect height="40" width="2" x="98" y="0"></rect>
+            <rect height="40" width="6" x="104" y="0"></rect>
+            <rect height="40" width="2" x="112" y="0"></rect>
+            <rect height="40" width="4" x="118" y="0"></rect>
+            <rect height="40" width="2" x="124" y="0"></rect>
+            <rect height="40" width="6" x="130" y="0"></rect>
+            <rect height="40" width="2" x="140" y="0"></rect>
+            <rect height="40" width="4" x="144" y="0"></rect>
+            <rect height="40" width="2" x="152" y="0"></rect>
+            <rect height="40" width="4" x="158" y="0"></rect>
+            <rect height="40" width="6" x="166" y="0"></rect>
+            <rect height="40" width="2" x="174" y="0"></rect>
+            <rect height="40" width="4" x="180" y="0"></rect>
+            <rect height="40" width="2" x="188" y="0"></rect>
+            <rect height="40" width="6" x="194" y="0"></rect>
+          </svg>
+          <span class="font-mono text-[10px] font-bold text-slate-500 tracking-widest">{{ ticket.ticket_ref }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTION COMMAND RIBBON -->
+    <div class="bg-slate-100 border-t border-slate-200 px-6 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <a href="{% url 'ticket-download-pdf' ticket.id %}" class="inline-flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-lg font-display-hero text-xs font-bold uppercase tracking-wider hover:bg-black transition-all shadow-sm">
+          <span class="material-symbols-outlined text-[18px]">download_for_offline</span>
+          <span>Download Offline PDF</span>
+        </a>
+        <button onclick="window.print()" class="inline-flex items-center gap-2 bg-white border border-slate-300 text-slate-800 px-4 py-2.5 rounded-lg font-display-hero text-xs font-bold uppercase tracking-wider hover:bg-slate-50 transition-colors shadow-xs" type="button">
+          <span class="material-symbols-outlined text-[18px] text-primary">print</span>
+          <span>Print Pass</span>
+        </button>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        {% if ticket.is_eligible_for_resale and ticket.status == 'ACTIVE' %}
+        <a href="{% url 'sell-ticket' %}?ticketId={{ ticket.id }}" class="inline-flex items-center gap-2 bg-primary-container text-white px-5 py-2.5 rounded-lg font-display-hero text-xs font-bold uppercase tracking-wider hover:opacity-95 transition-all shadow-[0_4px_16px_-2px_rgba(255,102,0,0.35)]">
+          <span class="material-symbols-outlined text-[18px]">currency_exchange</span>
+          <span>List for Resale at Original Price</span>
+        </a>
+        {% elif ticket.status == 'LISTED' %}
+        <a href="{% url 'my-listings' %}" class="inline-flex items-center gap-2 bg-amber-600 text-white px-5 py-2.5 rounded-lg font-display-hero text-xs font-bold uppercase tracking-wider hover:bg-amber-700 transition-all shadow-sm">
+          <span class="material-symbols-outlined text-[18px]">storefront</span>
+          <span>Manage Active Resale Listing</span>
+        </a>
+        {% endif %}
+        <a class="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 text-xs font-bold uppercase tracking-wider px-3 py-2 font-display-hero" data-path="all-passes" href="{% url 'ticket-vault' %}">
+          <span>All Passes</span>
+          <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- EVENT MEDIA & ITINERARY DETAILS (If available) -->
+  {% if ticket.image_url or ticket.itinerary_or_details %}
+  <div class="grid grid-cols-1 {% if ticket.image_url and ticket.itinerary_or_details %}md:grid-cols-3{% endif %} gap-6 pt-2">
+    {% if ticket.image_url %}
+    <div class="{% if ticket.itinerary_or_details %}md:col-span-1{% else %}w-full{% endif %} relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 min-h-[200px] flex flex-col justify-end p-6 shadow-sm">
+      <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ ticket.image_url }}')"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent"></div>
+      <div class="relative z-10 text-white">
+        <h2 class="font-display-hero text-lg font-bold uppercase tracking-wide">
+          {{ ticket.title }}
+        </h2>
+        <span class="text-xs text-slate-300 font-medium">{{ ticket.provider_name }}</span>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if ticket.itinerary_or_details %}
+    <div class="{% if ticket.image_url %}md:col-span-2{% else %}w-full{% endif %} bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400 font-display-hero block mb-2">
+          Event &amp; Booking Details
+        </span>
+        <p class="text-sm text-slate-700 leading-relaxed font-body-lg">
+          {{ ticket.itinerary_or_details }}
+        </p>
+      </div>
+      <div class="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+        <span>Issued by {{ ticket.provider_name }}</span>
+        <span class="font-mono font-bold text-slate-700">Ref: {{ ticket.ticket_ref }}</span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

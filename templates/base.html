@@ -1,0 +1,435 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <meta content="web_standard" name="shell-type">
+  <title>{% block title %}lastchance - Verified Ticket Marketplace &amp; Pass Vault{% endblock %}</title>
+
+  <!-- Favicon & Brand Icons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'img/favicon-16x16.png' %}">
+  <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
+
+  <!-- Google Fonts: Outfit, Plus Jakarta Sans, Space Grotesk, Syne, JetBrains Mono -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Syne:wght@700;800;900&display=swap"
+    rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-primary-fixed-variant": "#7c2e00",
+            "on-error-container": "#93000a",
+            "primary-fixed": "#ffdbcd",
+            "surface-container-highest": "#e2e3e1",
+            "error": "#ba1a1a",
+            "on-primary-container": "#561d00",
+            "on-secondary": "#ffffff",
+            "surface-tint": "#a33e00",
+            "tertiary-fixed-dim": "#ffb867",
+            "on-tertiary-container": "#462800",
+            "background": "#f9f9f7",
+            "on-surface-variant": "#5a4136",
+            "on-tertiary": "#ffffff",
+            "surface-variant": "#e2e3e1",
+            "tertiary-container": "#d68400",
+            "on-tertiary-fixed": "#2b1700",
+            "surface-dim": "#dadad8",
+            "tertiary-fixed": "#ffddbb",
+            "on-secondary-fixed-variant": "#474646",
+            "inverse-primary": "#ffb596",
+            "inverse-surface": "#111111",
+            "secondary-fixed-dim": "#c8c6c5",
+            "primary-fixed-dim": "#ffb596",
+            "primary": "#a33e00",
+            "tertiary": "#885200",
+            "brand-amber": "#ec940f",
+            "surface-container-high": "#e8e8e6",
+            "on-surface": "#1a1c1b",
+            "surface": "#f9f9f7",
+            "secondary-fixed": "#e5e2e1",
+            "primary-container": "#ff6600",
+            "surface-bright": "#f9f9f7",
+            "on-background": "#1a1c1b",
+            "surface-container": "#eeeeec",
+            "on-primary-fixed": "#360f00",
+            "on-secondary-container": "#656464",
+            "error-container": "#ffdad6",
+            "secondary-container": "#e5e2e1",
+            "secondary": "#111111",
+            "inverse-on-surface": "#f1f1ef",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary-fixed-variant": "#673d00",
+            "surface-container-low": "#f4f4f2",
+            "on-secondary-fixed": "#1c1b1b",
+            "on-error": "#ffffff",
+            "on-primary": "#ffffff",
+            "outline-variant": "#e3bfb1",
+            "outline": "#8e7164"
+          },
+          borderRadius: {
+            "sm": "0.25rem",
+            "DEFAULT": "0.5rem",
+            "md": "0.75rem",
+            "lg": "1rem",
+            "xl": "1.5rem",
+            "full": "9999px"
+          },
+          spacing: {
+            "space-md": "1rem",
+            "margin": "1rem",
+            "gutter-lg": "2rem",
+            "margin-lg": "3.5rem",
+            "space-xl": "2.5rem",
+            "space-lg": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "gutter-md": "1.5rem",
+            "margin-md": "2rem",
+            "gutter": "1rem"
+          },
+          fontFamily: {
+            sans: ["Plus Jakarta Sans", "sans-serif"],
+            body: ["Plus Jakarta Sans", "sans-serif"],
+            display: ["Outfit", "sans-serif"],
+            heading: ["Outfit", "sans-serif"],
+            route: ["Space Grotesk", "sans-serif"],
+            mono: ["JetBrains Mono", "monospace"],
+            "body-lg": ["Plus Jakarta Sans", "sans-serif"],
+            "body-md": ["Plus Jakarta Sans", "sans-serif"],
+            "headline-lg": ["Outfit", "sans-serif"],
+            "display-hero": ["Outfit", "sans-serif"],
+            "body-sm": ["Plus Jakarta Sans", "sans-serif"],
+            "display-hero-mobile": ["Outfit", "sans-serif"],
+            "label-ticket": ["Outfit", "sans-serif"],
+            "code-barcode": ["JetBrains Mono", "monospace"],
+            "headline-md": ["Outfit", "sans-serif"],
+            "headline-lg-mobile": ["Outfit", "sans-serif"],
+            "headline-sm": ["Outfit", "sans-serif"],
+            headline: ["Outfit", "sans-serif"],
+            label: ["Outfit", "sans-serif"]
+          },
+          fontSize: {
+            "body-lg": ["18px", { lineHeight: "28px", fontWeight: "500" }],
+            "body-md": ["15px", { lineHeight: "22px", fontWeight: "400" }],
+            "headline-lg": ["36px", { lineHeight: "44px", fontWeight: "700" }],
+            "display-hero": ["56px", { lineHeight: "64px", fontWeight: "800" }],
+            "body-sm": ["13px", { lineHeight: "18px", fontWeight: "400" }],
+            "display-hero-mobile": ["36px", { lineHeight: "42px", fontWeight: "800" }],
+            "label-ticket": ["12px", { lineHeight: "16px", fontWeight: "700" }],
+            "code-barcode": ["11px", { lineHeight: "14px", fontWeight: "600" }],
+            "headline-md": ["24px", { lineHeight: "30px", fontWeight: "700" }],
+            "headline-lg-mobile": ["28px", { lineHeight: "34px", fontWeight: "700" }],
+            "headline-sm": ["20px", { lineHeight: "26px", fontWeight: "600" }]
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+
+  <style>
+    @layer base {
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      body {
+        overscroll-behavior: none;
+      }
+
+      main> :first-child {
+        margin-top: 0 !important;
+      }
+
+      main> :last-child {
+        margin-bottom: 0 !important;
+      }
+    }
+
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body
+  class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-white">
+
+  <!-- =========================================================================
+       FIXED BRAND HEADER (Two-Tier Kinetic Ticket Navigation & Category Strip)
+       ========================================================================= -->
+  <header
+    class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/95 backdrop-blur-xl border-b border-surface-container-high shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
+    <div class="w-full px-4 sm:px-6 lg:px-8">
+
+      <!-- Tier 1: Main Brand Bar (Logo, Trust Architecture, Actions & User Profile) -->
+      <div class="h-16 flex items-center justify-between gap-4 border-b border-surface-container-high/60">
+
+        <!-- Official Brand Logo -->
+        <div class="flex items-center gap-4 sm:gap-6">
+          <a class="flex items-center group shrink-0" data-path="marketplace-home"
+            href="{% url 'explore' %}" aria-label="lastchance home">
+            <img src="{% static 'img/logo-horizontal.png' %}" alt="lastchance"
+              class="h-8 sm:h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-105">
+          </a>
+
+          <!-- DigiLocker Trust Seal -->
+          <div
+            class="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low text-tertiary border border-surface-container-high text-xs font-bold font-label-ticket uppercase tracking-wider">
+            <span class="material-symbols-outlined text-[16px] text-brand-amber">verified</span>
+            <span>Setu DigiLocker Verified</span>
+          </div>
+        </div>
+
+        <!-- Right Quick Action CTAs & Profile Controls -->
+        <div class="flex items-center gap-2 sm:gap-3">
+
+          <!-- Primary CTA: Sell Tickets -->
+          <a class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-primary-container text-on-primary font-label-ticket text-xs uppercase tracking-wider font-bold shadow-[0_2px_10px_rgba(255,102,0,0.25)] hover:bg-primary transition-all active:scale-95 shrink-0"
+            data-path="sell-tickets" href="{% url 'sell-ticket' %}">
+            <span class="material-symbols-outlined text-[18px]">sell</span>
+            <span>Sell Tickets</span>
+          </a>
+
+          <!-- Secondary CTA: My Passes / Vault -->
+          <a class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-container-low text-on-surface hover:bg-surface-container font-label-ticket text-xs uppercase tracking-wider transition-colors font-bold shrink-0"
+            data-path="my-passes" href="{% url 'ticket-vault' %}">
+            <span class="material-symbols-outlined text-[18px] text-primary-container">wallet</span>
+            <span>My Passes</span>
+          </a>
+
+          {% if user.is_authenticated %}
+          <!-- Authenticated Shortcut: My Listings -->
+          <a class="hidden md:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-container-low text-on-surface hover:bg-surface-container font-label-ticket text-xs uppercase tracking-wider transition-colors font-bold shrink-0"
+            data-path="my-listings" href="{% url 'my-listings' %}">
+            <span class="material-symbols-outlined text-[18px] text-tertiary">storefront</span>
+            <span>My Listings</span>
+          </a>
+
+          <!-- Authenticated Shortcut: Wallet -->
+          <a class="hidden xl:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-container-low text-on-surface hover:bg-surface-container font-label-ticket text-xs uppercase tracking-wider transition-colors font-bold shrink-0"
+            data-path="my-wallet" href="{% url 'my-wallet' %}">
+            <span class="material-symbols-outlined text-[18px] text-primary-container">account_balance_wallet</span>
+            <span>Wallet</span>
+          </a>
+          {% endif %}
+
+          <!-- Notifications & Orders -->
+          <a href="{% url 'user-orders' %}" aria-label="Bookings & Orders"
+            class="w-9 h-9 rounded-xl bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors relative shrink-0"
+            title="My Orders & Notifications">
+            <span class="material-symbols-outlined text-[20px]">notifications</span>
+            <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary-container"></span>
+          </a>
+
+          <!-- User Account / Auth Section -->
+          {% if user.is_authenticated %}
+          <div class="flex items-center gap-2 pl-2 border-l border-surface-container-high">
+            <a class="flex items-center gap-2 group" data-path="account-settings" href="{% url 'verification' %}"
+              title="DigiLocker KYC: {{ user.username }}">
+              <div
+                class="w-9 h-9 rounded-full bg-gradient-to-tr from-primary to-primary-container text-white flex items-center justify-center font-bold text-xs shadow-xs ring-2 ring-surface-container-low shrink-0">
+                {{ user.username|slice:":2"|upper }}
+              </div>
+              <div class="hidden lg:flex flex-col text-left">
+                <span
+                  class="text-xs font-bold leading-tight text-on-surface group-hover:text-primary-container transition-colors">
+                  {{ user.get_full_name|default:user.username }}
+                </span>
+                <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-0.5">
+                  <span class="material-symbols-outlined text-[12px]">verified</span> KYC Active
+                </span>
+              </div>
+            </a>
+            <form method="post" action="{% url 'logout' %}" class="inline m-0">
+              {% csrf_token %}
+              <button type="submit"
+                class="w-8 h-8 rounded-lg hover:bg-error/10 text-secondary hover:text-error flex items-center justify-center transition-colors"
+                title="Log Out">
+                <span class="material-symbols-outlined text-[18px]">logout</span>
+              </button>
+            </form>
+          </div>
+          {% else %}
+          <div class="flex items-center gap-2 pl-2 border-l border-surface-container-high">
+            <a href="{% url 'login' %}"
+              class="px-3.5 py-2 rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface font-label-ticket text-xs uppercase tracking-wider font-bold transition-colors">
+              Log In
+            </a>
+            <a href="{% url 'register' %}"
+              class="hidden sm:inline-block px-3.5 py-2 rounded-xl bg-inverse-surface hover:bg-black text-inverse-on-surface font-label-ticket text-xs uppercase tracking-wider font-bold transition-colors">
+              Register
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Tier 2: Category Filter Navigation Strip (Horizontal Scrolling Tabs) -->
+      <div class="py-2.5 flex items-center justify-between gap-4 overflow-x-auto no-scrollbar" id="vault-tabs">
+        <nav class="flex items-center gap-2 shrink-0">
+          <a class="px-4 py-2 rounded-xl {% if not selected_category or selected_category == 'all' and not selected_type == 'resale' %}bg-inverse-surface text-inverse-on-surface shadow-sm{% else %}bg-surface-container-lowest text-on-surface-variant hover:text-on-surface border border-surface-container-high/80 transition-colors{% endif %} font-label-ticket text-xs uppercase tracking-wider whitespace-nowrap font-bold"
+            data-path="marketplace-home" href="{% url 'explore' %}">
+            All Passes ({{ total_count|default:"14" }})
+          </a>
+          <a class="px-4 py-2 rounded-xl {% if selected_category == 'train' %}bg-inverse-surface text-inverse-on-surface shadow-sm{% else %}bg-surface-container-lowest text-on-surface-variant hover:text-on-surface border border-surface-container-high/80 transition-colors{% endif %} font-label-ticket text-xs uppercase tracking-wider whitespace-nowrap font-bold"
+            data-path="train-tickets" href="{% url 'explore' %}?category=train">
+            Trains
+          </a>
+          <a class="px-4 py-2 rounded-xl {% if selected_category == 'flight' %}bg-inverse-surface text-inverse-on-surface shadow-sm{% else %}bg-surface-container-lowest text-on-surface-variant hover:text-on-surface border border-surface-container-high/80 transition-colors{% endif %} font-label-ticket text-xs uppercase tracking-wider whitespace-nowrap font-bold"
+            data-path="flight-tickets" href="{% url 'explore' %}?category=flight">
+            Flights
+          </a>
+          <a class="px-4 py-2 rounded-xl {% if selected_category == 'concert' or selected_category == 'festival' %}bg-inverse-surface text-inverse-on-surface shadow-sm{% else %}bg-surface-container-lowest text-on-surface-variant hover:text-on-surface border border-surface-container-high/80 transition-colors{% endif %} font-label-ticket text-xs uppercase tracking-wider whitespace-nowrap font-bold"
+            data-path="concert-tickets" href="{% url 'explore' %}?category=concert">
+            Concerts &amp; Festivals
+          </a>
+          <a class="px-4 py-2 rounded-xl {% if selected_category == 'movie' %}bg-inverse-surface text-inverse-on-surface shadow-sm{% else %}bg-surface-container-lowest text-on-surface-variant hover:text-on-surface border border-surface-container-high/80 transition-colors{% endif %} font-label-ticket text-xs uppercase tracking-wider whitespace-nowrap font-bold"
+            data-path="movie-tickets" href="{% url 'explore' %}?category=movie">
+            Movies
+          </a>
+          <a class="px-4 py-2 rounded-xl {% if selected_category == 'sports' %}bg-inverse-surface text-inverse-on-surface shadow-sm{% else %}bg-surface-container-lowest text-on-surface-variant hover:text-on-surface border border-surface-container-high/80 transition-colors{% endif %} font-label-ticket text-xs uppercase tracking-wider whitespace-nowrap font-bold"
+            data-path="sports-tickets" href="{% url 'explore' %}?category=sports">
+            Sports
+          </a>
+          <a class="px-4 py-2 rounded-xl {% if selected_type == 'resale' %}bg-inverse-surface text-inverse-on-surface shadow-sm{% else %}bg-surface-container-lowest text-on-surface-variant hover:text-on-surface border border-surface-container-high/80 transition-colors{% endif %} font-label-ticket text-xs uppercase tracking-wider whitespace-nowrap font-bold"
+            href="{% url 'explore' %}?type=resale">
+            P2P Resale
+          </a>
+        </nav>
+
+        <!-- Right Quick Trigger: Pass Vault & QR Scanner -->
+        <div class="hidden md:flex items-center gap-2 shrink-0">
+          <a class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface transition-colors font-label-ticket text-xs tracking-wider uppercase font-bold"
+            data-path="verify-resale" href="{% url 'ticket-vault' %}">
+            <span class="material-symbols-outlined text-primary-container text-[17px]">qr_code_scanner</span>
+            <span>Pass Vault &amp; QR</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       MAIN VIEWPORT CONTAINER (pt-28 sm:pt-32 to clear two-tier fixed header)
+       ========================================================================= -->
+  <main class="{% block main_class %}w-full pt-28 sm:pt-32 bg-surface flex-1{% endblock %}">
+    {% if messages %}
+    <div class="w-full px-4 sm:px-6 lg:px-8 pt-4">
+      {% for message in messages %}
+      <div
+        class="mb-3 px-4 py-3 rounded-xl text-body-sm font-body-sm border-0 flex items-center justify-between gap-3 {% if message.tags == 'error' %}bg-error-container text-on-error-container{% elif message.tags == 'success' %}bg-tertiary-container/20 text-on-tertiary-container{% else %}bg-surface-container-high text-on-surface{% endif %}">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">
+            {% if message.tags == 'error' %}
+            error
+            {% elif message.tags == 'success' %}
+            check_circle
+            {% else %}
+            info
+            {% endif %}
+          </span>
+          <span>{{ message }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- =========================================================================
+       BRAND FOOTER (Complete Architectural Guarantee & Link Hub)
+       ========================================================================= -->
+  {% block footer %}
+  <footer class="w-full bg-white border-t border-slate-200 mt-auto">
+    <div class="h-1 w-full bg-primary-container"></div>
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-8 pb-6 border-b border-slate-100">
+        <!-- Brand Summary -->
+        <div class="md:col-span-6 flex flex-col gap-3">
+          <a class="inline-flex items-center gap-2 group" href="{% url 'explore' %}" aria-label="lastchance home">
+            <img src="{% static 'img/logo-horizontal.png' %}" alt="lastchance"
+              class="h-8 w-auto object-contain group-hover:opacity-90 transition-opacity">
+          </a>
+          <p class="text-sm text-slate-500 leading-relaxed max-w-sm">
+            Buy and sell spare tickets at original face value. Verified through DigiLocker so every transfer is safe and
+            authentic.
+          </p>
+          <div class="flex items-center gap-2 pt-1 text-xs text-slate-600">
+            <span
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
+              <span class="material-symbols-outlined text-[15px] text-emerald-600">verified</span>
+              DigiLocker Verified
+            </span>
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-medium">
+              <span class="material-symbols-outlined text-[15px] text-slate-500">lock</span>
+              Protected Transfers
+            </span>
+          </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="md:col-span-3 flex flex-col gap-2.5">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-900">Categories</span>
+          <div class="flex flex-col gap-2 text-sm text-slate-600">
+            <a class="hover:text-primary-container transition-colors"
+              href="{% url 'explore' %}?category=train">Trains</a>
+            <a class="hover:text-primary-container transition-colors"
+              href="{% url 'explore' %}?category=flight">Flights</a>
+            <a class="hover:text-primary-container transition-colors"
+              href="{% url 'explore' %}?category=movie">Movies</a>
+            <a class="hover:text-primary-container transition-colors"
+              href="{% url 'explore' %}?category=concert">Concerts</a>
+            <a class="hover:text-primary-container transition-colors"
+              href="{% url 'explore' %}?category=sports">Sports</a>
+          </div>
+        </div>
+
+        <!-- Quick Links / Account -->
+        <div class="md:col-span-3 flex flex-col gap-2.5">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-900">Sell &amp; Manage</span>
+          <div class="flex flex-col gap-2 text-sm text-slate-600">
+            <a class="hover:text-primary-container transition-colors" href="{% url 'sell-ticket' %}">Sell a Ticket</a>
+            <a class="hover:text-primary-container transition-colors" href="{% url 'my-listings' %}">My Listings</a>
+            <a class="hover:text-primary-container transition-colors" href="{% url 'ticket-vault' %}">My Tickets</a>
+            <a class="hover:text-primary-container transition-colors" href="{% url 'my-wallet' %}">Wallet &amp;
+              Payouts</a>
+            <a class="hover:text-primary-container transition-colors" href="{% url 'verification' %}">Identity
+              Verification</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+  {% endblock %}
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+
+</html>
