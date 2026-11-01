@@ -54,12 +54,9 @@ def custom_404_view(request, exception=None):
     with diagnostic ledger and escrow safe indicators.
     """
     setattr(request, '_custom_404_rendered', True)
-    error_msg = None
-    if exception:
-        error_msg = str(exception)
     return render(request, '404.html', {
         'error_title': 'Ticket Not Found',
-        'error_message': error_msg or 'The requested voucher was severed at the perforation line. The tokenized pass is voided, redeemed, or unresolvable.',
+        'error_message': 'The requested voucher was severed at the perforation line. The tokenized pass is voided, redeemed, or unresolvable.',
         'requested_path': getattr(request, 'path', ''),
     }, status=404)
 
